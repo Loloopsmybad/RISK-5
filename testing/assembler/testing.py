@@ -97,7 +97,7 @@ def J_TYPE_INSTRUCTION():
 
 
 def main():
-    int x = input("file path ? ")
+    x = input("file path ? ")
     try:
     with open(x, 'r') as file:
         content = file.read()
