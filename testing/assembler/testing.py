@@ -99,8 +99,8 @@ def J_TYPE_INSTRUCTION():
 def main():
     x = input("file path ? ")
     try:
-    with open(x, 'r') as file:
-        content = file.read()
-        print(content)
+        with open(x, 'r') as file:
+            content = file.read()
+            print(content)
     except FileNotFoundError:
         print("File not found.")
