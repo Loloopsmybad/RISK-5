@@ -1,4 +1,4 @@
-
+import re 
 '''
 note the ADRESSES ARE AS FFOLOWS
 
@@ -19,16 +19,16 @@ note the ADRESSES ARE AS FFOLOWS
 | 111_{00-11}               | x28-31   | t3-6     | Temporaries                          | Caller |
 '''
 Registers = {#32 registers and their 2nd name
-    "zero":"00000", "x0":"00000",
-    "ra":  "00001", "x1":"00001",
-    "sp":  "00010", "x2":"00010",
-    "gp":  "00011", "x3":"00011",
-    "tp":  "00100", "x4":"00100",
-    "t0":  "00101", "x5":"00101",
-    "t1":  "00110", "x6":"00110",
-    "t2":  "00111", "x7":"00111",
-    "s0":  "01000", "fp":"01000", "x8": "01000",
-    "s1":  "01001", "x9": "01001",
+  "zero":  "00000", "x0" :"00000",
+    "ra":  "00001", "x1" :"00001",
+    "sp":  "00010", "x2" :"00010",
+    "gp":  "00011", "x3" :"00011",
+    "tp":  "00100", "x4" :"00100",
+    "t0":  "00101", "x5" :"00101",
+    "t1":  "00110", "x6" :"00110",
+    "t2":  "00111", "x7" :"00111",
+    "s0":  "01000", "fp" :"01000", "x8": "01000",
+    "s1":  "01001", "x9" :"01001",
     "a0":  "01010", "x10":"01010",
     "a1":  "01011", "x11":"01011",
     "a2":  "01100", "x12":"01100",
@@ -80,10 +80,35 @@ U_type_INSTRUCTIONS={
 J_type_INSTRUCTIONS={
 
 }
+def pre_process(subpart):#preprocess a sub_instruction
+    spaces=[]
+    for i in range(len(subpart)):
+        if subpart[i].strip() == '':
+                spaces.append(i)
+            # print(spaces)
+    spaces.reverse()
+    for i in range(len(spaces)):#remove zeroes from the sub_instruction
+        del subpart[spaces[i]]
 
 def R_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
+    binary_instruction=[]
+    subpart=re.split("[ ,]",instruction)
+    pre_process(subpart)
+    print(subpart)
+    binary_instruction.append(R_type_INSTRUCTIONS[subpart[0]][0])#opcode
+    binary_instruction.append(Registers[subpart[1]])#rd
+    binary_instruction.append(R_type_INSTRUCTIONS[subpart[0]][1])#func3
+    binary_instruction.append(Registers[subpart[2]])#rs1
+    binary_instruction.append(Registers[subpart[3]])#rs2
+    binary_instruction.append(R_type_INSTRUCTIONS[subpart[0]][2])#func3
+    binary_instruction.reverse()
+    print(binary_instruction)
+    
+
+
+
 
 def I_TYPE_INSTRUCTION(instruction):
     print("")
@@ -133,7 +158,7 @@ def main():
     for i in range(len(content)):
         
         parts = content[i].split(" ")
-        print(f"checking: {parts[0]}")
+        # print(f"checking: {parts[0]}")
         if parts[0] in R_type_INSTRUCTIONS:
             R_TYPE_INSTRUCTION(content[i])
         elif parts[0] in I_type_INSTRUCTIONS:
