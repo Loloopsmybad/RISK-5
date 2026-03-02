@@ -115,7 +115,6 @@ def main():
     try:
         with open(x, 'r') as file:
             content = file.readlines()
-
             for i in range(len(content)):#remove \n
                     if content[i].strip() != '':
                         content[i]=content[i].strip()
