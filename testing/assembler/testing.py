@@ -118,9 +118,10 @@ def main():
             for i in range(len(content)):#remove \n
                     content[i]=content[i].strip()
                     if content[i].strip() == '':
-                        print(content[i])
+                        # print(content[i])
                         remove_spaces.append(i)
-            print(remove_spaces)
+            # print(remove_spaces)
+            remove_spaces.reverse()
             for i in range(len(remove_spaces)):#remove zeroes
                 del content[remove_spaces[i]]
             print(content,len(content))
