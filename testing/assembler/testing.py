@@ -1,7 +1,23 @@
-import os
 
+'''
+note the ADRESSES ARE AS FFOLOWS
 
+| Address                   | Register | ABI Name | Description                          | Saver  |
 
+| 0000_0                    | x0       | zero     | Hard-wired zero                      | —      |
+| 0000_1                    | x1       | ra       | Return address                       | Caller |
+| 0001_0                    | x2       | sp       | Stack Pointer                        | Callee |
+| 0001_1                    | x3       | gp       | Global Pointer                       | —      |
+| 0010_0                    | x4       | tp       | Thread Pointer                       | —      |
+| 0010_1                    | x5       | t0       | Temporary / alternate link register  | Caller |
+| 00_{110,111}              | x6-7     | t1-2     | Temporaries                          | Caller |
+| 0100_0                    | x8       | s0/fp    | Saved register / frame pointer       | Callee |
+| 0100_1                    | x9       | s1       | Saved register                       | Callee |
+| 0101_{0,1}                | x10-11   | a0-1     | Function arguments / return values   | Caller |
+| (011_{00-11}),(1000_{0,1})| x12-17   | a2-7     | Function arguments                   | Caller |
+| 1_{0010-1011}             | x18-27   | s2-11    | Saved registers                      | Caller |
+| 111_{00-11}               | x28-31   | t3-6     | Temporaries                          | Caller |
+'''
 Registers = {#32 registers and their 2nd name
     "zero":"00000", "x0":"00000",
     "ra":  "00001", "x1":"00001",
@@ -36,71 +52,97 @@ Registers = {#32 registers and their 2nd name
     "t5":  "11110", "x30":"11110",
     "t6":  "11111", "x31":"11111",
 }
+R_type_INSTRUCTIONS={
+#instruction   #opcode   #func3  #func 7
+    "add"  : ["0110011", "000", "0000000"],
+    "sub"  : ["0110011", "000", "0100000"],
+    "sll"  : ["0110011", "001", "0000000"],
+    "slt"  : ["0110011", "010", "0000000"],
+    "sltu" : ["0110011", "011", "0000000"],
+    "xor"  : ["0110011", "100", "0000000"],
+    "srl"  : ["0110011", "101", "0000000"],
+    "or"   : ["0110011", "110", "0000000"],
+    "and"  : ["0110011", "111", "0000000"]
+}
+I_type_INSTRUCTIONS={
 
-'''
-note the ADRESSES ARE AS FFOLOWS
+}
+S_type_INSTRUCTIONS={
 
-| Address                   | Register | ABI Name | Description                          | Saver  |
-| 0000_0                    | x0       | zero     | Hard-wired zero                      | —      |
-| 0000_1                    | x1       | ra       | Return address                       | Caller |
-| 0001_0                    | x2       | sp       | Stack Pointer                        | Callee |
-| 0001_1                    | x3       | gp       | Global Pointer                       | —      |
-| 0010_0                    | x4       | tp       | Thread Pointer                       | —      |
-| 0010_1                    | x5       | t0       | Temporary / alternate link register  | Caller |
-| 00_{110,111}              | x6–7     | t1–2     | Temporaries                          | Caller |
-| 0100_0                    | x8       | s0/fp    | Saved register / frame pointer       | Callee |
-| 0100_1                    | x9       | s1       | Saved register                       | Callee |
-| 0101_{0,1}                | x10–11   | a0–1     | Function arguments / return values   | Caller |
-| (011_{00-11}),(1000_{0,1})| x12–17   | a2–7     | Function arguments        | Caller |
-| 1_{0010-1011}             | x18–27   | s2–11    | Saved registers                      | Caller |
-| 111_{00-11}               | x28–31   | t3–6     | Temporaries                          | Caller |
-+-------------------+----------+----------+--------------------------------------+--------+
+}
+B_type_INSTRUCTIONS={
 
-'''
-def R_TYPE_INSTRUCTION():
-    print("R_TYPE_INSTRUCTION")
-    '''
-    Fields: funct7 | rs2 | rs1 | funct3 | rd | opcode
+}
+U_type_INSTRUCTIONS={
 
-    Example: add s1, s2, s3
-    meaning: s1 = s2 + s3
+}
+J_type_INSTRUCTIONS={
 
-    funct7  = identifies ADD operation
-    rs2     = s3 (second source register)
-    rs1     = s2 (first source register)  
-    funct3  = helps identify ADD
-    rd      = s1 (where result goes)
-    opcode  = identifies R-type
-    '''
+}
 
+def R_TYPE_INSTRUCTION(instruction):
+    print("")
+    print(instruction)
 
-
-
-def I_TYPE_INSTRUCTION():
+def I_TYPE_INSTRUCTION(instruction):
+    print("")
     print("I_TYPE_INSTRUCTION")
 
-def S_TYPE_INSTRUCTION():
+def S_TYPE_INSTRUCTION(instruction):
+    print("")
     print("S_TYPE_INSTRUCTION")
 
-def B_TYPE_INSTRUCTION():
+def B_TYPE_INSTRUCTION(instruction):
+    print("")
     print("B_TYPE_INSTRUCTION")
 
 
-def U_TYPE_INSTRUCTION():
+def U_TYPE_INSTRUCTION(instruction):
+    print("")
     print("U_TYPE_INSTRUCTION")
 
 
-def J_TYPE_INSTRUCTION():  
+def J_TYPE_INSTRUCTION(instruction):  
+    print("")
     print("J_TYPE_INSTRUCTION")
 
 
 
 
 def main():
-    int x = input("file path ? ")
+    x = input("file path ? ")
+    remove_spaces=[]
     try:
-    with open(x, 'r') as file:
-        content = file.read()
-        print(content)
+        with open(x, 'r') as file:
+            content = file.readlines()
+
+            for i in range(len(content)):#remove \n
+                    if content[i].strip() != '':
+                        content[i]=content[i].strip()
+                    else :
+                        remove_spaces.append(i)
+
+            for i in range(len(remove_spaces)):#remove zeroes
+                content.remove(remove_spaces[i])
+            print(content,len(content))
     except FileNotFoundError:
         print("File not found.")
+
+    for i in range(len(content)):
+        x=content[i].split()
+        if x[0] in R_type_INSTRUCTIONS:
+            R_TYPE_INSTRUCTION(content[i])
+        elif x[0] in I_type_INSTRUCTIONS:
+            I_TYPE_INSTRUCTION(content[i])
+        elif x[0] in S_type_INSTRUCTIONS:
+            S_TYPE_INSTRUCTION(content[i])
+        elif x[0] in B_type_INSTRUCTIONS:
+            B_TYPE_INSTRUCTION(content[i])
+        elif x[0] in U_type_INSTRUCTIONS:
+            U_TYPE_INSTRUCTION(content[i])
+        elif x[0] in J_type_INSTRUCTIONS:
+            J_TYPE_INSTRUCTION(content[i])
+
+
+    
+main()
