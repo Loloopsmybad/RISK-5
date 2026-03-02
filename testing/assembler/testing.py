@@ -65,6 +65,7 @@ R_type_INSTRUCTIONS={
     "and"  : ["0110011", "111", "0000000"]
 }
 I_type_INSTRUCTIONS={
+
 }
 S_type_INSTRUCTIONS={
 
@@ -115,19 +116,19 @@ def main():
         with open(x, 'r') as file:
             content = file.readlines()
             for i in range(len(content)):#remove \n
-                    if content[i].strip() != '':
-                        content[i]=content[i].strip()
-                    else :
+                    content[i]=content[i].strip()
+                    if content[i].strip() == '':
+                        print(content[i])
                         remove_spaces.append(i)
-
+            print(remove_spaces)
             for i in range(len(remove_spaces)):#remove zeroes
-                content.remove(remove_spaces[i])
+                del content[remove_spaces[i]]
             print(content,len(content))
     except FileNotFoundError:
         print("File not found.")
 
     for i in range(len(content)):
-        x=content[i].split()
+        x=content[i].split(" ")
         if x[0] in R_type_INSTRUCTIONS:
             R_TYPE_INSTRUCTION(content[i])
         elif x[0] in I_type_INSTRUCTIONS:
