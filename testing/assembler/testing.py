@@ -133,7 +133,7 @@ def main():
     for i in range(len(content)):
         
         parts = content[i].split(" ")
-        # print(f"checking: {parts[0]}")
+        print(f"checking: {parts[0]}")
         if parts[0] in R_type_INSTRUCTIONS:
             R_TYPE_INSTRUCTION(content[i])
         elif parts[0] in I_type_INSTRUCTIONS:
