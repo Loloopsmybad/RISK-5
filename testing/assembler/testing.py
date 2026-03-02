@@ -65,7 +65,6 @@ R_type_INSTRUCTIONS={
     "and"  : ["0110011", "111", "0000000"]
 }
 I_type_INSTRUCTIONS={
-
 }
 S_type_INSTRUCTIONS={
 
