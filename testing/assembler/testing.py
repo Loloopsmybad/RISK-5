@@ -56,13 +56,14 @@ R_type_INSTRUCTIONS={
 #instruction   #opcode   #func3  #func 7
     "add"  : ["0110011", "000", "0000000"],
     "sub"  : ["0110011", "000", "0100000"],
-    "sll"  : ["0110011", "001", "0000000"],
-    "slt"  : ["0110011", "010", "0000000"],
-    "sltu" : ["0110011", "011", "0000000"],
     "xor"  : ["0110011", "100", "0000000"],
-    "srl"  : ["0110011", "101", "0000000"],
     "or"   : ["0110011", "110", "0000000"],
-    "and"  : ["0110011", "111", "0000000"]
+    "and"  : ["0110011", "111", "0000000"],
+    "sll"  : ["0110011", "001", "0000000"],
+    "srl"  : ["0110011", "101", "0000000"],
+    # "sra"  : ["0110011", "101", "0000000"],
+    "slt"  : ["0110011", "010", "0000000"],
+    "sltu" : ["0110011", "011", "0000000"]
 }
 I_type_INSTRUCTIONS={
 
@@ -127,20 +128,23 @@ def main():
             print(content,len(content))
     except FileNotFoundError:
         print("File not found.")
+        return
 
     for i in range(len(content)):
-        x=content[i].split(" ")
-        if x[0] in R_type_INSTRUCTIONS:
+        
+        parts = content[i].split(" ")
+        # print(f"checking: {parts[0]}")
+        if parts[0] in R_type_INSTRUCTIONS:
             R_TYPE_INSTRUCTION(content[i])
-        elif x[0] in I_type_INSTRUCTIONS:
+        elif parts[0] in I_type_INSTRUCTIONS:
             I_TYPE_INSTRUCTION(content[i])
-        elif x[0] in S_type_INSTRUCTIONS:
+        elif parts[0] in S_type_INSTRUCTIONS:
             S_TYPE_INSTRUCTION(content[i])
-        elif x[0] in B_type_INSTRUCTIONS:
+        elif parts[0] in B_type_INSTRUCTIONS:
             B_TYPE_INSTRUCTION(content[i])
-        elif x[0] in U_type_INSTRUCTIONS:
+        elif parts[0] in U_type_INSTRUCTIONS:
             U_TYPE_INSTRUCTION(content[i])
-        elif x[0] in J_type_INSTRUCTIONS:
+        elif parts[0] in J_type_INSTRUCTIONS:
             J_TYPE_INSTRUCTION(content[i])
 
 
