@@ -1,0 +1,6 @@
+addi a0,zero,4
+addi t0,zero,0
+addi t1,zero,1
+jalr zero,ra,0
+lw t2,0(sp)
+
