@@ -80,6 +80,7 @@ U_type_INSTRUCTIONS={
 J_type_INSTRUCTIONS={
 
 }
+refined_instructions=[]
 def pre_process(subpart):#preprocess a sub_instruction
     spaces=[]
     for i in range(len(subpart)):
@@ -94,15 +95,12 @@ def R_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
     binary_instruction=[]
-    subpart=re.split("[ ,]",instruction)
-    pre_process(subpart)
-    print(subpart)
-    binary_instruction.append(R_type_INSTRUCTIONS[subpart[0]][0])#opcode
-    binary_instruction.append(Registers[subpart[1]])#rd
-    binary_instruction.append(R_type_INSTRUCTIONS[subpart[0]][1])#func3
-    binary_instruction.append(Registers[subpart[2]])#rs1
-    binary_instruction.append(Registers[subpart[3]])#rs2
-    binary_instruction.append(R_type_INSTRUCTIONS[subpart[0]][2])#func3
+    binary_instruction.append(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
+    binary_instruction.append(Registers[instruction[1]])#rd
+    binary_instruction.append(R_type_INSTRUCTIONS[instruction[0]][1])#func3
+    binary_instruction.append(Registers[instruction[2]])#rs1
+    binary_instruction.append(Registers[instruction[3]])#rs2
+    binary_instruction.append(R_type_INSTRUCTIONS[instruction[0]][2])#func3
     binary_instruction.reverse()
     print(binary_instruction)
     
@@ -140,38 +138,33 @@ def main():
     remove_spaces=[]
     try:
         with open(x, 'r') as file:
-            content = file.readlines()
-            for i in range(len(content)):#remove \n
-                    content[i]=content[i].strip()
-                    if content[i].strip() == '':
-                        # print(content[i])
-                        remove_spaces.append(i)
-            # print(remove_spaces)
-            remove_spaces.reverse()
-            for i in range(len(remove_spaces)):#remove zeroes
-                del content[remove_spaces[i]]
-            print(content,len(content))
+            for line in file:
+                line=line.replace("("," ")
+                line=line.replace(")"," ")
+                line=line.replace(","," ")
+                line=line.strip().split(" ")
+                # print(line)
+                pre_process(line)
+                # print(line)
+                refined_instructions.append(line)
+            print(refined_instructions,len(refined_instructions))
     except FileNotFoundError:
         print("File not found.")
         return
-
-    for i in range(len(content)):
-        
-        parts = content[i].split(" ")
+    for i in range(len(refined_instructions)):
         # print(f"checking: {parts[0]}")
-        if parts[0] in R_type_INSTRUCTIONS:
-            R_TYPE_INSTRUCTION(content[i])
-        elif parts[0] in I_type_INSTRUCTIONS:
-            I_TYPE_INSTRUCTION(content[i])
-        elif parts[0] in S_type_INSTRUCTIONS:
-            S_TYPE_INSTRUCTION(content[i])
-        elif parts[0] in B_type_INSTRUCTIONS:
-            B_TYPE_INSTRUCTION(content[i])
-        elif parts[0] in U_type_INSTRUCTIONS:
-            U_TYPE_INSTRUCTION(content[i])
-        elif parts[0] in J_type_INSTRUCTIONS:
-            J_TYPE_INSTRUCTION(content[i])
-
+        if refined_instructions[i][0] in R_type_INSTRUCTIONS:
+            R_TYPE_INSTRUCTION(refined_instructions[i])
+        elif refined_instructions[i][0] in I_type_INSTRUCTIONS:
+            I_TYPE_INSTRUCTION(refined_instructions[i])
+        elif refined_instructions[i][0] in S_type_INSTRUCTIONS:
+            S_TYPE_INSTRUCTION(refined_instructions[i])
+        elif refined_instructions[i][0] in B_type_INSTRUCTIONS:
+            B_TYPE_INSTRUCTION(refined_instructions[i])
+        elif refined_instructions[i][0] in U_type_INSTRUCTIONS:
+            U_TYPE_INSTRUCTION(refined_instructions[i])
+        elif refined_instructions[i][0] in J_type_INSTRUCTIONS:
+            J_TYPE_INSTRUCTION(refined_instructions[i])
 
     
 main()
