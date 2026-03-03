@@ -1,4 +1,3 @@
-
 '''
 note the ADRESSES ARE AS FFOLOWS
 
@@ -65,6 +64,11 @@ R_type_INSTRUCTIONS={
     "and"  : ["0110011", "111", "0000000"]
 }
 I_type_INSTRUCTIONS={
+# instruction   #opcode   #func3   #func7 (not used in I-type)
+    "lw"    : ["0000011", "010", None],
+    "addi"  : ["0010011", "000", None],
+    "sltiu" : ["0010011", "011", None],
+    "jalr"  : ["1100111", "000", None],
 }
 S_type_INSTRUCTIONS={
 
@@ -78,14 +82,47 @@ U_type_INSTRUCTIONS={
 J_type_INSTRUCTIONS={
 
 }
+instructions=[]
+insbinary = []
+
+def to_binary(n, bits):
+    n=int(n)
+    binary=""
+    while(n>0):
+        binary+=str(n%2)
+        n=n//2
+    binary=binary[::-1]
+    if(len(binary)>bits):
+        print("Overflow occured")
+        exit()
+    else:
+        zeros=bits-len(binary)
+        binary=str("0"*zeros)+binary
+
+    return binary
 
 def R_TYPE_INSTRUCTION(instruction):
-    print("")
+    print("")   
     print(instruction)
 
 def I_TYPE_INSTRUCTION(instruction):
-    print("")
-    print("I_TYPE_INSTRUCTION")
+    short = instruction[0]
+
+    opcode = I_type_INSTRUCTIONS[short][0]
+    func3  = I_type_INSTRUCTIONS[short][1]
+
+    if short == "lw":
+        rd  = Registers[instruction[1]]
+        imm = to_binary(instruction[2], 12)
+        rs1 = Registers[instruction[3]]
+    else:
+        rd  = Registers[instruction[1]]
+        rs1 = Registers[instruction[2]]
+        imm = to_binary(instruction[3], 12)
+
+    inst = imm + rs1 + func3 + rd + opcode
+    insbinary.append(inst)
+
 
 def S_TYPE_INSTRUCTION(instruction):
     print("")
@@ -110,37 +147,30 @@ def J_TYPE_INSTRUCTION(instruction):
 
 def main():
     x = input("file path ? ")
-    remove_spaces=[]
     try:
-        with open(x, 'r') as file:
-            content = file.readlines()
-            for i in range(len(content)):#remove \n
-                    if content[i].strip() != '':
-                        content[i]=content[i].strip()
-                    else :
-                        remove_spaces.append(i)
-
-            for i in range(len(remove_spaces)):#remove zeroes
-                content.remove(remove_spaces[i])
-            print(content,len(content))
-    except FileNotFoundError:
-        print("File not found.")
-
-    for i in range(len(content)):
-        x=content[i].split()
-        if x[0] in R_type_INSTRUCTIONS:
-            R_TYPE_INSTRUCTION(content[i])
-        elif x[0] in I_type_INSTRUCTIONS:
-            I_TYPE_INSTRUCTION(content[i])
-        elif x[0] in S_type_INSTRUCTIONS:
-            S_TYPE_INSTRUCTION(content[i])
-        elif x[0] in B_type_INSTRUCTIONS:
-            B_TYPE_INSTRUCTION(content[i])
-        elif x[0] in U_type_INSTRUCTIONS:
-            U_TYPE_INSTRUCTION(content[i])
-        elif x[0] in J_type_INSTRUCTIONS:
-            J_TYPE_INSTRUCTION(content[i])
-
-
+        with open(x, "r") as file:
+            for line in file:
+                line=line.replace("("," ")
+                line=line.replace(")"," ")
+                instructions.append(line.strip().replace(","," ").split(" "))
+        for ins in instructions:
+            if ins[0] in R_type_INSTRUCTIONS:
+                R_TYPE_INSTRUCTION(ins)
+            elif ins[0] in I_type_INSTRUCTIONS:
+                I_TYPE_INSTRUCTION(ins)
+            elif ins[0] in S_type_INSTRUCTIONS:
+                S_TYPE_INSTRUCTION(ins)
+            elif ins[0] in B_type_INSTRUCTIONS:
+                B_TYPE_INSTRUCTION(ins)
+            elif ins[0] in U_type_INSTRUCTIONS:
+                U_TYPE_INSTRUCTION(ins)
+            elif ins[0] in J_type_INSTRUCTIONS:
+                J_TYPE_INSTRUCTION(ins)
+        with open("program.txt", "w") as file:
+            for inst in insbinary:
+                file.write(inst + "\n")
+        print("Commands translated to binary in program.txt")
+    except:
+        print("Syntax Error")
     
 main()
