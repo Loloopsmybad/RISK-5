@@ -69,18 +69,30 @@ I_type_INSTRUCTIONS={
 
 }
 S_type_INSTRUCTIONS={
-
+#instruction   #opcode   #func3
+    "sw"   : ["0100011", "010"],
 }
 B_type_INSTRUCTIONS={
 
 }
 U_type_INSTRUCTIONS={
+#instruction   #opcode
+    "lui"  : ["0110111"],
+    "auipc": ["0010111"],
 
 }
 J_type_INSTRUCTIONS={
-
+#instruction   #opcode
+    "jal"  : ["1101111"],
 }
 refined_instructions=[]
+binary_instructions=[]
+def write_to_file():
+    with open("output.txt", 'w') as file:
+        for instruction in binary_instructions:
+            file.write(instruction + '\n')
+    
+
 def pre_process(subpart):#preprocess a sub_instruction
     spaces=[]
     for i in range(len(subpart)):
@@ -94,15 +106,16 @@ def pre_process(subpart):#preprocess a sub_instruction
 def R_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
-    binary_instruction=[]
-    binary_instruction.append(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
-    binary_instruction.append(Registers[instruction[1]])#rd
-    binary_instruction.append(R_type_INSTRUCTIONS[instruction[0]][1])#func3
-    binary_instruction.append(Registers[instruction[2]])#rs1
-    binary_instruction.append(Registers[instruction[3]])#rs2
-    binary_instruction.append(R_type_INSTRUCTIONS[instruction[0]][2])#func3
-    binary_instruction.reverse()
+    binary_instruction=""
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
+    binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
+    binary_instruction=binary_instruction+(Registers[instruction[2]])#rs1
+    binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func3
+    binary_instruction=binary_instruction[::-1]#reverse the string to get the correct order
     print(binary_instruction)
+    binary_instructions.append(binary_instruction)
     
 
 
@@ -121,9 +134,34 @@ def B_TYPE_INSTRUCTION(instruction):
     print("B_TYPE_INSTRUCTION")
 
 
+def convert_20(str):
+    value= int(str, 0)#convert to integer
+    low= -(2**19)
+    high= (2**19 -1)
+    if value<low or value>high:
+        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
+    if value<0:
+        value= 2**20 + value # 2's complement
+    return format(value, "020b")
+
+
+
 def U_TYPE_INSTRUCTION(instruction):
     print("")
-    print("U_TYPE_INSTRUCTION")
+    print(instruction)
+    subpart=re.split("[ ,]",instruction) #break the instruction
+    pre_process(subpart)
+    print(subpart)
+    operation= subpart[0] #operations like lui etc.
+    rdname= subpart[1] #destination register
+    imm_str=subpart[2] #imm bits
+    opcode=U_type_INSTRUCTIONS[operation][0] #find the value of opcode from dictionary
+    rd= Registers[rdname]
+    imm20bit= convert_20(imm_str) #convert it into 20 bits
+
+    binary_u_instruction= opcode+rd+imm20bit #binary instrutcion
+    print(binary_u_instruction)
+    return binary_u_instruction
 
 
 def J_TYPE_INSTRUCTION(instruction):  
@@ -168,3 +206,4 @@ def main():
 
     
 main()
+write_to_file()
