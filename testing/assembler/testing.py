@@ -134,6 +134,17 @@ def B_TYPE_INSTRUCTION(instruction):
     print("B_TYPE_INSTRUCTION")
 
 
+def convert_binary(value, bits):
+    while value>0:
+        binarystr= str(value%2)+binarystr
+        value=value//2
+    if (int(bits)<len(binarystr)):
+        print("Overflow")
+    else:
+        x=bits- len(binarystr)
+        binarystr=str(0*x)+binarystr
+    return binarystr
+
 def convert_20(str):
     value= int(str, 0)#convert to integer
     low= -(2**19)
@@ -142,7 +153,7 @@ def convert_20(str):
         print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
     if value<0:
         value= 2**20 + value # 2's complement
-    return format(value, "020b")
+    return convert_binary(value, 20)
 
 
 
@@ -152,22 +163,26 @@ def U_TYPE_INSTRUCTION(instruction):
     subpart=re.split("[ ,]",instruction) #break the instruction
     pre_process(subpart)
     print(subpart)
-    operation= subpart[0] #operations like lui etc.
-    rdname= subpart[1] #destination register
-    imm_str=subpart[2] #imm bits
+    operation= subpart[0]
+    rdname= subpart[1]
+    imm_str=subpart[2]
     opcode=U_type_INSTRUCTIONS[operation][0] #find the value of opcode from dictionary
     rd= Registers[rdname]
     imm20bit= convert_20(imm_str) #convert it into 20 bits
 
-    binary_u_instruction= opcode+rd+imm20bit #binary instrutcion
+    binary_u_instruction= imm20bit+rd+opcode
     print(binary_u_instruction)
     return binary_u_instruction
 
 
 def J_TYPE_INSTRUCTION(instruction):  
     print("")
-    print("J_TYPE_INSTRUCTION")
+    operation=
+    rdname=
+    imm_str=
 
+    binary_j_instruction= opcode
+    print("J_TYPE_INSTRUCTION")
 
 
 
