@@ -147,14 +147,15 @@ def main():
     try:
         with open(x, 'r') as file:
             for line in file:
-                line=line.replace("("," ")
-                line=line.replace(")"," ")
-                line=line.replace(","," ")
-                line=line.strip().split(" ")
-                # print(line)
-                pre_process(line)
-                # print(line)
-                refined_instructions.append(line)
+                if line.strip() != '':
+                    line=line.replace("("," ")
+                    line=line.replace(")"," ")
+                    line=line.replace(","," ")
+                    line=line.strip().split(" ")
+                    # print(line)
+                    pre_process(line)
+                    # print(line)
+                    refined_instructions.append(line)
             print(refined_instructions,len(refined_instructions))
     except FileNotFoundError:
         print("File not found.")
