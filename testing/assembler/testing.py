@@ -139,7 +139,7 @@ def convert_12(str):
 def S_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
-    subpart=re.split("[ ,()]",instruction) #break the instruction
+    subpart= instruction #break the instruction
     pre_process(subpart)
     print(subpart)
     operation = subpart[0]
@@ -163,6 +163,7 @@ def B_TYPE_INSTRUCTION(instruction):
     print("B_TYPE_INSTRUCTION")
 
 def convert_binary(value, bits):
+  binarystr=""
     while value>0:
         binarystr= str(value%2)+binarystr
         value=value//2
@@ -170,7 +171,7 @@ def convert_binary(value, bits):
         print("Overflow")
     else:
         x=bits- len(binarystr)
-        binarystr=str(0*x)+binarystr
+        binarystr=str("0"*x)+binarystr
     return binarystr
 
 def convert_20(str):
@@ -188,7 +189,7 @@ def convert_20(str):
 def U_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
-    subpart=re.split("[ ,]",instruction) #break the instruction
+    subpart= instruction #break the instruction
     pre_process(subpart)
     print(subpart)
     operation= subpart[0]
@@ -215,7 +216,7 @@ def convert_21(str):
 def J_TYPE_INSTRUCTION(instruction):  
     print("")
     print(instruction)
-    subpart=re.split("[ ,]",instruction) #break the instruction
+    subpart= instruction #break the instruction
     pre_process(subpart)
     print(subpart)
 
