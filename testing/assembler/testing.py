@@ -61,7 +61,7 @@ R_type_INSTRUCTIONS={
     "and"  : ["0110011", "111", "0000000"],
     "sll"  : ["0110011", "001", "0000000"],
     "srl"  : ["0110011", "101", "0000000"],
-    "sra"  : ["0110011", "101", "0000000"],
+    "sra"  : ["0110011", "101", "0100000"],
     "slt"  : ["0110011", "010", "0000000"],
     "sltu" : ["0110011", "011", "0000000"]
 }
@@ -93,13 +93,6 @@ def write_to_file():
             file.write(instruction + '\n')
     
 
-binary_instructions=[]
-def write_to_file():
-    with open("output.txt", 'w') as file:
-        for instruction in binary_instructions:
-            file.write(instruction + '\n')
-    
-
 def pre_process(subpart):#preprocess a sub_instruction
     spaces=[]
     for i in range(len(subpart)):
@@ -121,22 +114,9 @@ def R_TYPE_INSTRUCTION(instruction):
     binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
     binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func3
     binary_instruction=binary_instruction[::-1]#reverse the string to get the correct order
-    binary_instruction=""
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
-    binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
-    binary_instruction=binary_instruction+(Registers[instruction[2]])#rs1
-    binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func3
-    binary_instruction=binary_instruction[::-1]#reverse the string to get the correct order
     print(binary_instruction)
     binary_instructions.append(binary_instruction)
-    binary_instructions.append(binary_instruction)
     
-
-
-
-
 def I_TYPE_INSTRUCTION(instruction):
     print("")
     print("I_TYPE_INSTRUCTION")
@@ -286,4 +266,4 @@ def main():
     
 main()
 write_to_file()
-write_to_file()
+
