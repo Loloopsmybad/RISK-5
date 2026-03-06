@@ -61,7 +61,7 @@ R_type_INSTRUCTIONS={
     "and"  : ["0110011", "111", "0000000"],
     "sll"  : ["0110011", "001", "0000000"],
     "srl"  : ["0110011", "101", "0000000"],
-    "sra"  : ["0110011", "101", "0000000"],
+    "sra"  : ["0110011", "101", "0100000"],# func 7 not 0000000 but 0100000 
     "slt"  : ["0110011", "010", "0000000"],
     "sltu" : ["0110011", "011", "0000000"]
 }
@@ -102,8 +102,15 @@ def pre_process(subpart):#preprocess a sub_instruction
     spaces.reverse()
     for i in range(len(spaces)):#remove zeroes from the sub_instruction
         del subpart[spaces[i]]
+#i genreated this example when I was using AI to dry run
+"""Build order:  opcode + rd    + funct3 + rs1   + rs2   + funct7
+              0110011+ 00111 + 010    + 00110 + 01010 + 0000000
+Before [::-1]: "01100110011101000110010100000000"
+After  [::-1]: "00000000101001100010111001100110"  ← WRONG (fields flipped inside)
+Correct would: "00000000101000110010001110110011"
+""""
+"""def R_TYPE_INSTRUCTION(instruction):# the encoding done is wrong as it reverses the entire string 
 
-def R_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
     binary_instruction=""
@@ -115,8 +122,19 @@ def R_TYPE_INSTRUCTION(instruction):
     binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func3
     binary_instruction=binary_instruction[::-1]#reverse the string to get the correct order
     print(binary_instruction)
-    binary_instructions.append(binary_instruction)
-    
+    binary_instructions.append(binary_instruction)"""
+def R_TYPE_INSTRUCTION(instruction):
+    print("")
+    print(instruction)
+    binary_instruction=""
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func7
+    binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
+    binary_instruction=binary_instruction+(Registers[instruction[2]])#rs1
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
+    binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
+    print(binary_instruction)
+    binary_instructions.append(binary_instruction)    
 
 
 
@@ -163,7 +181,7 @@ def B_TYPE_INSTRUCTION(instruction):
     print("B_TYPE_INSTRUCTION")
 
 def convert_binary(value, bits):
-  binarystr=""
+    binarystr=""
     while value>0:
         binarystr= str(value%2)+binarystr
         value=value//2
