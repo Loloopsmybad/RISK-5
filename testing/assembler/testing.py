@@ -61,19 +61,29 @@ R_type_INSTRUCTIONS={
     "and"  : ["0110011", "111", "0000000"],
     "sll"  : ["0110011", "001", "0000000"],
     "srl"  : ["0110011", "101", "0000000"],
-    "sra"  : ["0110011", "101", "0100000"],# func 7 not 0000000 but 0100000 
+    "sra"  : ["0110011", "101", "0100000"],
     "slt"  : ["0110011", "010", "0000000"],
     "sltu" : ["0110011", "011", "0000000"]
 }
 I_type_INSTRUCTIONS={
-
+# instruction   #opcode   #func3   #func7 (not used in I-type)
+    "lw"    : ["0000011", "010", None],
+    "addi"  : ["0010011", "000", None],
+    "sltiu" : ["0010011", "011", None],
+    "jalr"  : ["1100111", "000", None],
 }
 S_type_INSTRUCTIONS={
 #instruction   #opcode   #func3
     "sw"   : ["0100011", "010"],
 }
 B_type_INSTRUCTIONS={
-
+#instruction  #opcode  #func3
+    "beq":["1100011","000"],
+    "bne":["1100011","001"],
+    "blt":["1100011","100"],
+    "bge":["1100011","101"],
+    "bltu":["1100011","110"],
+    "bgeu":["1100011","111"]
 }
 U_type_INSTRUCTIONS={
 #instruction   #opcode
@@ -102,46 +112,6 @@ def pre_process(subpart):#preprocess a sub_instruction
     spaces.reverse()
     for i in range(len(spaces)):#remove zeroes from the sub_instruction
         del subpart[spaces[i]]
-#i genreated this example when I was using AI to dry run
-"""Build order:  opcode + rd    + funct3 + rs1   + rs2   + funct7
-              0110011+ 00111 + 010    + 00110 + 01010 + 0000000
-Before [::-1]: "01100110011101000110010100000000"
-After  [::-1]: "00000000101001100010111001100110"  ← WRONG (fields flipped inside)
-Correct would: "00000000101000110010001110110011"
-""""
-"""def R_TYPE_INSTRUCTION(instruction):# the encoding done is wrong as it reverses the entire string 
-
-    print("")
-    print(instruction)
-    binary_instruction=""
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
-    binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
-    binary_instruction=binary_instruction+(Registers[instruction[2]])#rs1
-    binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func3
-    binary_instruction=binary_instruction[::-1]#reverse the string to get the correct order
-    print(binary_instruction)
-    binary_instructions.append(binary_instruction)"""
-def R_TYPE_INSTRUCTION(instruction):
-    print("")
-    print(instruction)
-    binary_instruction=""
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func7
-    binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
-    binary_instruction=binary_instruction+(Registers[instruction[2]])#rs1
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
-    binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
-    print(binary_instruction)
-    binary_instructions.append(binary_instruction)    
-
-
-
-
-def I_TYPE_INSTRUCTION(instruction):
-    print("")
-    print("I_TYPE_INSTRUCTION")
 
 def convert_imm(str,bits):
     value= int(str, 0)#convert to integer
@@ -149,105 +119,168 @@ def convert_imm(str,bits):
     high= (2**(bits-1) -1)
     if value<low or value>high:
         print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
-    if value<0:
-        value= 2**(int(bits)) + value # 2's complement
     return convert_binary(value, bits)
+
+def convert_binary(n, bits):
+    n = int(n)
+    if n < -(2**(bits-1)) or n > (2**(bits-1) - 1):
+        print("Overflow occured")
+        exit()
+    if n < 0:
+        n = 2**bits + n  
+
+    binary = ""
+    while n > 0:
+        binary += str(n % 2)
+        n = n // 2
+
+    if binary == "":
+        binary = "0"
+
+    binary = binary[::-1]
+    zeros = bits - len(binary)
+    binary = "0"*zeros + binary
+
+    return binary
+
+def collect_labels(refined_instructions,labels):
+    pc=0
+    for inst in refined_instructions:
+        if inst[0].endswith(":"):
+            label=inst[0][:-1]
+            labels[label]=pc
+            if len(inst)>1:
+                pc+=4
+        else:
+            pc+=4
+
+def R_TYPE_INSTRUCTION(instruction):
+    binary_instruction=""
+
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func7
+    binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
+    binary_instruction=binary_instruction+(Registers[instruction[2]])#rs1
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
+    binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
+
+    binary_instructions.append(binary_instruction)
+    
+def I_TYPE_INSTRUCTION(instruction):
+    short = instruction[0]
+
+    opcode = I_type_INSTRUCTIONS[short][0]
+    func3  = I_type_INSTRUCTIONS[short][1]
+
+    if short == "lw":
+        rd  = Registers[instruction[1]]
+        imm = convert_imm(instruction[2], 12)
+        rs1 = Registers[instruction[3]]
+    else:
+        rd  = Registers[instruction[1]]
+        rs1 = Registers[instruction[2]]
+        imm = convert_imm(instruction[3], 12)
+
+    inst = imm + rs1 + func3 + rd + opcode
+    binary_instructions.append(inst)
+
 
 
 def S_TYPE_INSTRUCTION(instruction):
-    print("")
-    print(instruction)
     subpart= instruction #break the instruction
     pre_process(subpart)
-    print(subpart)
-    operation = subpart[0]
-    rs2id= subpart[1]
-    imm_str= subpart[2]
-    rs1id= subpart[3]
 
-    opcode=S_type_INSTRUCTIONS[operation][0]
-    func3=S_type_INSTRUCTIONS[operation][1]
-    rs2= Registers[rs2id]
-    rs1= Registers[rs1id]
-    imm12bits= convert_imm(imm_str,12)
+    opcode=S_type_INSTRUCTIONS[subpart[0]][0]
+    func3=S_type_INSTRUCTIONS[subpart[0]][1]
+    rs2= Registers[subpart[1]]
+    rs1= Registers[subpart[3]]
+    imm12bits= convert_imm(subpart[2],12)
+
     immstart= imm12bits[0:7] #imm[11:5]
     immend= imm12bits[7:12] #imm[4:0]
+
     binary_s_instruction=immstart+rs2+rs1+func3+immend+opcode
-    print(binary_s_instruction)
-    return binary_s_instruction
+    binary_instructions.append(binary_s_instruction)
 
-def B_TYPE_INSTRUCTION(instruction):
-    print("")
-    print("B_TYPE_INSTRUCTION")
+def B_TYPE_INSTRUCTION(instruction,current_pc,labels):
+    subpart=instruction
 
-def convert_binary(value, bits):
-    binarystr=""
-    while value>0:
-        binarystr= str(value%2)+binarystr
-        value=value//2
-    if (int(bits)<len(binarystr)):
-        print("Overflow")
+    opcode=B_type_INSTRUCTIONS[subpart[0]][0]
+    func3=B_type_INSTRUCTIONS[subpart[0]][1]
+    rs1=Registers[subpart[1]]
+    rs2=Registers[subpart[2]]
+
+    if subpart[3] in labels:
+        offset= labels[subpart[3]]-current_pc
     else:
-        x=bits- len(binarystr)
-        binarystr=str("0"*x)+binarystr
-    return binarystr
+        offset=int(subpart[3],0)
+    imm13bit = convert_imm(str(offset),13)	
+
+    signbit=imm13bit[0]
+    lastbit=imm13bit[1]
+    mid1=imm13bit[2:8]
+    mid2=imm13bit[8:12]
+    
+    binary_b_instruction=signbit+mid1+rs2+rs1+func3+mid2+lastbit+opcode
+    print(binary_b_instruction)
+    binary_instructions.append(binary_b_instruction)
+
 
 def U_TYPE_INSTRUCTION(instruction):
-    print("")
-    print(instruction)
     subpart= instruction #break the instruction
     pre_process(subpart)
-    print(subpart)
-    operation= subpart[0]
-    rdid= subpart[1]
-    imm_str=subpart[2]
-    opcode=U_type_INSTRUCTIONS[operation][0] #find the value of opcode from dictionary
-    rd= Registers[rdid]
-    imm20bit= convert_imm(imm_str,20) #convert it into 20 bits
 
-    binary_u_instruction= opcode+rd+imm20bit
-    print(binary_u_instruction)
-    return binary_u_instruction
+    opcode=U_type_INSTRUCTIONS[subpart[0]][0] #find the value of opcode from dictionary
+    rd= Registers[subpart[1]]
+    imm20bit= convert_imm(subpart[2],20) #convert it into 20 bits
 
-def J_TYPE_INSTRUCTION(instruction):  
-    print("")
-    print(instruction)
+    binary_u_instruction= imm20bit+rd+opcode
+    binary_instructions.append(binary_u_instruction)
+
+
+def J_TYPE_INSTRUCTION(instruction,labels,current_pc):  
     subpart= instruction #break the instruction
     pre_process(subpart)
-    print(subpart)
+   
+    opcode= J_type_INSTRUCTIONS[subpart[0]][0]
+    rd=Registers[subpart[1]]
 
-    operation= subpart[0]
-    rdid= subpart[1]
-    imm_str=subpart[2]
-    opcode= J_type_INSTRUCTIONS[operation][0]
-    rd=Registers[rdid]
-    imm21bit=convert_imm(imm_str,21)
+    if subpart[2] in labels:
+        offset= labels[subpart[2]]-current_pc
+    else:
+        offset=int(subpart[2],0)
+    imm21bit=convert_imm(str(offset),21)
+
     signbit= imm21bit[0]#imm[20] represents sign of imm[19] which is also bit 31
     target= imm21bit[1:9]#imm[19:12]
     next=imm21bit[9]#imm[11]
     source= imm21bit[10:20]#imm[10:1]
+
     binary_j_instruction= signbit+source+next+target+rd+opcode
-    print(binary_j_instruction)
-    return binary_j_instruction
+    binary_instructions.append(binary_j_instruction)
   
 def main():
     x = input("file path ? ")
-    remove_spaces=[]
     try:
         with open(x, 'r') as file:
             for line in file:
-                line=line.replace("("," ")
-                line=line.replace(")"," ")
-                line=line.replace(","," ")
-                line=line.strip().split(" ")
-                # print(line)
-                pre_process(line)
-                # print(line)
-                refined_instructions.append(line)
+                if line.strip() != '':
+                    line=line.replace("("," ")
+                    line=line.replace(")"," ")
+                    line=line.replace(","," ")
+                    line=line.strip().split(" ")
+                    # print(line)
+                    pre_process(line)
+                    # print(line)
+                    refined_instructions.append(line)
             print(refined_instructions,len(refined_instructions))
     except FileNotFoundError:
         print("File not found.")
         return
+    labels={}
+    collect_labels(refined_instructions, labels)
+    pc_list=[]
+    pc=0
     for i in range(len(refined_instructions)):
         # print(f"checking: {parts[0]}")
         if refined_instructions[i][0] in R_type_INSTRUCTIONS:
@@ -257,12 +290,13 @@ def main():
         elif refined_instructions[i][0] in S_type_INSTRUCTIONS:
             S_TYPE_INSTRUCTION(refined_instructions[i])
         elif refined_instructions[i][0] in B_type_INSTRUCTIONS:
-            B_TYPE_INSTRUCTION(refined_instructions[i])
+            B_TYPE_INSTRUCTION(refined_instructions[i],pc)
         elif refined_instructions[i][0] in U_type_INSTRUCTIONS:
             U_TYPE_INSTRUCTION(refined_instructions[i])
         elif refined_instructions[i][0] in J_type_INSTRUCTIONS:
-            J_TYPE_INSTRUCTION(refined_instructions[i])
-
+            J_TYPE_INSTRUCTION(refined_instructions[i],labels,pc)
+        pc_list.append(pc)
+        pc+=4
     
 main()
 write_to_file()
