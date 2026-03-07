@@ -103,6 +103,7 @@ def write_to_file():
     with open("output.txt", 'w') as file:
         for instruction in binary_instructions:
             file.write(instruction + '\n')
+    print("Binary instructions written to 'output.txt'")
     
 def pre_process(subpart):#preprocess a sub_instruction
     spaces=[]
