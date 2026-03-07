@@ -160,7 +160,7 @@ def R_TYPE_INSTRUCTION(instruction):
     binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
     binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
     binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
-    print(binary_instruction)
+    print(binary_instruction,"R TYPE")
     binary_instructions.append(binary_instruction)
     
 def I_TYPE_INSTRUCTION(instruction):
@@ -176,6 +176,7 @@ def I_TYPE_INSTRUCTION(instruction):
         rs1 = Registers[instruction[2]]
         imm = convert_binary(instruction[3], 12)
     inst = imm + rs1 + func3 + rd + opcode
+    print(inst,"I TYPE")
     binary_instructions.append(inst)
 
 def S_TYPE_INSTRUCTION(instruction):
@@ -192,6 +193,8 @@ def S_TYPE_INSTRUCTION(instruction):
     immend= imm12bits[7:12] #imm[4:0]
 
     binary_s_instruction=immstart+rs2+rs1+func3+immend+opcode
+    print(binary_s_instruction,"S TYPE")
+    
     binary_instructions.append(binary_s_instruction)
 
 def B_TYPE_INSTRUCTION(instruction,current_pc,labels):
@@ -214,7 +217,8 @@ def B_TYPE_INSTRUCTION(instruction,current_pc,labels):
     mid2=imm13bit[8:12]
     
     binary_b_instruction=signbit+mid1+rs2+rs1+func3+mid2+lastbit+opcode
-    print(binary_b_instruction)
+    print(binary_b_instruction, "B TYPE")
+    
     binary_instructions.append(binary_b_instruction)
 
 def U_TYPE_INSTRUCTION(instruction):
@@ -226,6 +230,7 @@ def U_TYPE_INSTRUCTION(instruction):
     imm20bit= convert_imm(subpart[2],20) #convert it into 20 bits
 
     binary_u_instruction= imm20bit+rd+opcode
+    print(binary_u_instruction, "U TYPE")
     binary_instructions.append(binary_u_instruction)
 
 def J_TYPE_INSTRUCTION(instruction,labels,current_pc):  
@@ -247,6 +252,7 @@ def J_TYPE_INSTRUCTION(instruction,labels,current_pc):
     source= imm21bit[10:20]#imm[10:1]
 
     binary_j_instruction= signbit+source+next+target+rd+opcode
+    print(binary_j_instruction, "J TYPE")
     binary_instructions.append(binary_j_instruction)
   
 def main():
@@ -271,22 +277,31 @@ def main():
     collect_labels(refined_instructions, labels)
     pc_list=[]
     pc=0
-    for i in range(len(refined_instructions)):
-        # print(f"checking: {parts[0]}")
-        if refined_instructions[i][0] in R_type_INSTRUCTIONS:
-            R_TYPE_INSTRUCTION(refined_instructions[i])
-        elif refined_instructions[i][0] in I_type_INSTRUCTIONS:
-            I_TYPE_INSTRUCTION(refined_instructions[i])
-        elif refined_instructions[i][0] in S_type_INSTRUCTIONS:
-            S_TYPE_INSTRUCTION(refined_instructions[i])
-        elif refined_instructions[i][0] in B_type_INSTRUCTIONS:
-            B_TYPE_INSTRUCTION(refined_instructions[i],pc,labels)
-        elif refined_instructions[i][0] in U_type_INSTRUCTIONS:
-            U_TYPE_INSTRUCTION(refined_instructions[i])
-        elif refined_instructions[i][0] in J_type_INSTRUCTIONS:
-            J_TYPE_INSTRUCTION(refined_instructions[i],labels,pc)
-        pc_list.append(pc)
-        pc+=4
+    for i in range(len(refined_instructions)):                
+        if refined_instructions[i][0].endswith(":") and len(refined_instructions[i]) == 1:  #fix for labels without instructions on the same line
+            continue                                          
+        inst = refined_instructions[i]                        
+        if inst[0].endswith(":") :
+            actual_inst = inst[1:] 
+        else :
+            actual_inst = inst  # line 158
+        op = actual_inst[0]                                    
+
+        if op in R_type_INSTRUCTIONS:                         
+            R_TYPE_INSTRUCTION(actual_inst)                   
+        elif op in I_type_INSTRUCTIONS:                       
+            I_TYPE_INSTRUCTION(actual_inst)                   
+        elif op in S_type_INSTRUCTIONS:                       
+            S_TYPE_INSTRUCTION(actual_inst)                   
+        elif op in B_type_INSTRUCTIONS:                       
+            B_TYPE_INSTRUCTION(actual_inst, pc, labels)       
+        elif op in U_type_INSTRUCTIONS:                       
+            U_TYPE_INSTRUCTION(actual_inst)                   
+        elif op in J_type_INSTRUCTIONS:                       
+            J_TYPE_INSTRUCTION(actual_inst, labels, pc)       
+        pc_list.append(pc)                                    
+        pc+=4                                                 
+
     
 main()
 write_to_file()
