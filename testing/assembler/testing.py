@@ -87,7 +87,7 @@ insbinary = []
 
 
 def convert_binary(n, bits):
-    n = int(n)
+    n = int(n,0)
     if n < -(2**(bits-1)) or n > (2**(bits-1) - 1):
         print("Overflow occured")
         exit()
