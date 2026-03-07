@@ -89,31 +89,63 @@ J_type_INSTRUCTIONS={
 #instruction   #opcode
     "jal"  : ["1101111"],
 }
-instructions=[]
-insbinary = []
+refined_instructions=[]
+binary_instructions=[]
+def write_to_file():
+    with open("output.txt", 'w') as file:
+        for instruction in binary_instructions:
+            file.write(instruction + '\n')
+    
 
+def pre_process(subpart):#preprocess a sub_instruction
+    spaces=[]
+    for i in range(len(subpart)):
+        if subpart[i].strip() == '':
+                spaces.append(i)
+            # print(spaces)
+    spaces.reverse()
+    for i in range(len(spaces)):#remove zeroes from the sub_instruction
+        del subpart[spaces[i]]
 
-def convert_binary(n, bits):
-    n = int(n)
-    if n < -(2**(bits-1)) or n > (2**(bits-1) - 1):
-        print("Overflow occured")
-        exit()
-    if n < 0:
-        n = 2**bits + n  
+def convert_12(str):
+    value= int(str, 0)#convert to integer
+    low= -(2**11)
+    high= (2**11 -1)
+    if value<low or value>high:
+        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
+    if value<0:
+        value= 2**12 + value # 2's complement
+    return convert_binary(value, 12)
 
-    binary = ""
-    while n > 0:
-        binary += str(n % 2)
-        n = n // 2
+def convert_binary(value, bits):
+    while value>0:
+        binarystr= str(value%2)+binarystr
+        value=value//2
+    if (int(bits)<len(binarystr)):
+        print("Overflow")
+    else:
+        x=bits- len(binarystr)
+        binarystr=str(0*x)+binarystr
+    return binarystr
+def convert_20(str):
+    value= int(str, 0)#convert to integer
+    low= -(2**19)
+    high= (2**19 -1)
+    if value<low or value>high:
+        print("Error: Immediate out of range") # ValueErrror bot I dont know to do it except for try and except. One of you can do it
+    if value<0:
+        value= 2**20 + value # 2's complement
+    return convert_binary(value, 20)
 
-    if binary == "":
-        binary = "0"
-
-    binary = binary[::-1]
-    zeros = bits - len(binary)
-    binary = "0"*zeros + binary
-
-    return binary
+def convert_21(str):
+    value= int(str, 0)#convert to integer
+    low= -(2**20)
+    high= (2**20 -1)
+    if value<low or value>high:
+        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
+    if value<0:
+        value= 2**21 + value # 2's complement
+    return convert_binary(value, 21)    
 
 
 def R_TYPE_INSTRUCTION(instruction):
@@ -137,15 +169,15 @@ def I_TYPE_INSTRUCTION(instruction):
 
     if short == "lw":
         rd  = Registers[instruction[1]]
-        imm = convert_binary(instruction[2], 12)
+        imm = to_binary(instruction[2], 12)
         rs1 = Registers[instruction[3]]
     else:
         rd  = Registers[instruction[1]]
         rs1 = Registers[instruction[2]]
-        imm = convert_binary(instruction[3], 12)
+        imm = to_binary(instruction[3], 12)
 
     inst = imm + rs1 + func3 + rd + opcode
-    binary_instructions.append(inst)
+    insbinary.append(inst)
 
 
 
@@ -164,13 +196,12 @@ def S_TYPE_INSTRUCTION(instruction):
     func3=S_type_INSTRUCTIONS[operation][1]
     rs2= Registers[rs2id]
     rs1= Registers[rs1id]
-    imm12bits= convert_imm(imm_str,12)
+    imm12bits= convert_12(imm_str)
     immstart= imm12bits[0:7] #imm[11:5]
     immend= imm12bits[7:12] #imm[4:0]
     binary_s_instruction=immstart+rs2+rs1+func3+immend+opcode
     print(binary_s_instruction)
-    binary_instructions.append(binary_s_instruction)
-    # return binary_s_instruction
+    return binary_s_instruction
 
 def B_TYPE_INSTRUCTION(instruction):
     print("")
@@ -186,8 +217,19 @@ def convert_binary(value, bits):
     else:
         x=bits- len(binarystr)
         binarystr=str("0"*x)+binarystr
-    binary_instructions.append(binarystr)
-    # return binarystr
+    return binarystr
+
+def convert_20(str):
+    value= int(str, 0)#convert to integer
+    low= -(2**19)
+    high= (2**19 -1)
+    if value<low or value>high:
+        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
+    if value<0:
+        value= 2**20 + value # 2's complement
+    return convert_binary(value, 20)
+
+
 
 def U_TYPE_INSTRUCTION(instruction):
     print("")
@@ -200,12 +242,12 @@ def U_TYPE_INSTRUCTION(instruction):
     imm_str=subpart[2]
     opcode=U_type_INSTRUCTIONS[operation][0] #find the value of opcode from dictionary
     rd= Registers[rdid]
-    imm20bit= convert_imm(imm_str,20) #convert it into 20 bits
+    imm20bit= convert_20(imm_str) #convert it into 20 bits
 
     binary_u_instruction= opcode+rd+imm20bit
     print(binary_u_instruction)
-    binary_instructions.append(binary_u_instruction)
-    # return binary_u_instruction
+    return binary_u_instruction
+
 
 def J_TYPE_INSTRUCTION(instruction):  
     print("")
@@ -219,15 +261,14 @@ def J_TYPE_INSTRUCTION(instruction):
     imm_str=subpart[2]
     opcode= J_type_INSTRUCTIONS[operation][0]
     rd=Registers[rdid]
-    imm21bit=convert_imm(imm_str,21)
+    imm21bit=convert_21(imm_str)
     signbit= imm21bit[0]#imm[20] represents sign of imm[19] which is also bit 31
     target= imm21bit[1:9]#imm[19:12]
     next=imm21bit[9]#imm[11]
     source= imm21bit[10:20]#imm[10:1]
     binary_j_instruction= signbit+source+next+target+rd+opcode
     print(binary_j_instruction)
-    binary_instructions.append(binary_j_instruction)
-    # return binary_j_instruction
+    return binary_j_instruction
   
 def main():
     x = input("file path ? ")
