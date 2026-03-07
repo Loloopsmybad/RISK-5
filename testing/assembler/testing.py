@@ -96,6 +96,7 @@ J_type_INSTRUCTIONS={
 #instruction   #opcode
     "jal"  : ["1101111"],
 }
+
 refined_instructions=[]
 binary_instructions=[]
 def write_to_file():
@@ -103,7 +104,6 @@ def write_to_file():
         for instruction in binary_instructions:
             file.write(instruction + '\n')
     
-
 def pre_process(subpart):#preprocess a sub_instruction
     spaces=[]
     for i in range(len(subpart)):
@@ -129,19 +129,15 @@ def convert_binary(n, bits):
         exit()
     if n < 0:
         n = 2**bits + n  
-
     binary = ""
     while n > 0:
         binary += str(n % 2)
         n = n // 2
-
     if binary == "":
         binary = "0"
-
     binary = binary[::-1]
     zeros = bits - len(binary)
     binary = "0"*zeros + binary
-
     return binary
 
 def collect_labels(refined_instructions,labels):
@@ -169,10 +165,8 @@ def R_TYPE_INSTRUCTION(instruction):
     
 def I_TYPE_INSTRUCTION(instruction):
     short = instruction[0]
-
     opcode = I_type_INSTRUCTIONS[short][0]
     func3  = I_type_INSTRUCTIONS[short][1]
-
     if short == "lw":
         rd  = Registers[instruction[1]]
         imm = convert_binary(instruction[2], 12)
@@ -181,11 +175,8 @@ def I_TYPE_INSTRUCTION(instruction):
         rd  = Registers[instruction[1]]
         rs1 = Registers[instruction[2]]
         imm = convert_binary(instruction[3], 12)
-
     inst = imm + rs1 + func3 + rd + opcode
-    insbinary.append(inst)
-
-
+    binary_instructions.append(inst)
 
 def S_TYPE_INSTRUCTION(instruction):
     subpart= instruction #break the instruction
@@ -226,7 +217,6 @@ def B_TYPE_INSTRUCTION(instruction,current_pc,labels):
     print(binary_b_instruction)
     binary_instructions.append(binary_b_instruction)
 
-
 def U_TYPE_INSTRUCTION(instruction):
     subpart= instruction #break the instruction
     pre_process(subpart)
@@ -237,7 +227,6 @@ def U_TYPE_INSTRUCTION(instruction):
 
     binary_u_instruction= imm20bit+rd+opcode
     binary_instructions.append(binary_u_instruction)
-
 
 def J_TYPE_INSTRUCTION(instruction,labels,current_pc):  
     subpart= instruction #break the instruction
@@ -265,15 +254,6 @@ def main():
     try:
         with open(x, 'r') as file:
             for line in file:
-                if line.strip() != '':
-                    line=line.replace("("," ")
-                    line=line.replace(")"," ")
-                    line=line.replace(","," ")
-                    line=line.strip().split(" ")
-                    # print(line)
-                    pre_process(line)
-                    # print(line)
-                    refined_instructions.append(line)
                 if line.strip() != '':
                     line=line.replace("("," ")
                     line=line.replace(")"," ")
