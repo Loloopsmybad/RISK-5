@@ -85,21 +85,29 @@ J_type_INSTRUCTIONS={
 instructions=[]
 insbinary = []
 
-def to_binary(n, bits):
-    n=int(n)
-    binary=""
-    while(n>0):
-        binary+=str(n%2)
-        n=n//2
-    binary=binary[::-1]
-    if(len(binary)>bits):
+
+def convert_binary(n, bits):
+    n = int(n)
+    if n < -(2**(bits-1)) or n > (2**(bits-1) - 1):
         print("Overflow occured")
         exit()
-    else:
-        zeros=bits-len(binary)
-        binary=str("0"*zeros)+binary
+    if n < 0:
+        n = 2**bits + n  
+
+    binary = ""
+    while n > 0:
+        binary += str(n % 2)
+        n = n // 2
+
+    if binary == "":
+        binary = "0"
+
+    binary = binary[::-1]
+    zeros = bits - len(binary)
+    binary = "0"*zeros + binary
 
     return binary
+
 
 def R_TYPE_INSTRUCTION(instruction):
     print("")   
@@ -113,12 +121,12 @@ def I_TYPE_INSTRUCTION(instruction):
 
     if short == "lw":
         rd  = Registers[instruction[1]]
-        imm = to_binary(instruction[2], 12)
+        imm = convert_binary(instruction[2], 12)
         rs1 = Registers[instruction[3]]
     else:
         rd  = Registers[instruction[1]]
         rs1 = Registers[instruction[2]]
-        imm = to_binary(instruction[3], 12)
+        imm = convert_binary(instruction[3], 12)
 
     inst = imm + rs1 + func3 + rd + opcode
     insbinary.append(inst)
