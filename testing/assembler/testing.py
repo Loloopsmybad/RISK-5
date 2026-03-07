@@ -103,6 +103,47 @@ def pre_process(subpart):#preprocess a sub_instruction
     for i in range(len(spaces)):#remove zeroes from the sub_instruction
         del subpart[spaces[i]]
 
+def convert_12(str):
+    value= int(str, 0)#convert to integer
+    low= -(2**11)
+    high= (2**11 -1)
+    if value<low or value>high:
+        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
+    if value<0:
+        value= 2**12 + value # 2's complement
+    return convert_binary(value, 12)
+
+def convert_binary(value, bits):
+    while value>0:
+        binarystr= str(value%2)+binarystr
+        value=value//2
+    if (int(bits)<len(binarystr)):
+        print("Overflow")
+    else:
+        x=bits- len(binarystr)
+        binarystr=str(0*x)+binarystr
+    return binarystr
+def convert_20(str):
+    value= int(str, 0)#convert to integer
+    low= -(2**19)
+    high= (2**19 -1)
+    if value<low or value>high:
+        print("Error: Immediate out of range") # ValueErrror bot I dont know to do it except for try and except. One of you can do it
+    if value<0:
+        value= 2**20 + value # 2's complement
+    return convert_binary(value, 20)
+
+def convert_21(str):
+    value= int(str, 0)#convert to integer
+    low= -(2**20)
+    high= (2**20 -1)
+    if value<low or value>high:
+        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
+    if value<0:
+        value= 2**21 + value # 2's complement
+    return convert_binary(value, 21)    
+
+
 def R_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
@@ -120,16 +161,6 @@ def R_TYPE_INSTRUCTION(instruction):
 def I_TYPE_INSTRUCTION(instruction):
     print("")
     print("I_TYPE_INSTRUCTION")
-
-def convert_12(str):
-    value= int(str, 0)#convert to integer
-    low= -(2**11)
-    high= (2**11 -1)
-    if value<low or value>high:
-        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
-    if value<0:
-        value= 2**12 + value # 2's complement
-    return convert_binary(value, 12)
 
 
 def S_TYPE_INSTRUCTION(instruction):
@@ -158,26 +189,6 @@ def B_TYPE_INSTRUCTION(instruction):
     print("")
     print("B_TYPE_INSTRUCTION")
 
-def convert_binary(value, bits):
-    while value>0:
-        binarystr= str(value%2)+binarystr
-        value=value//2
-    if (int(bits)<len(binarystr)):
-        print("Overflow")
-    else:
-        x=bits- len(binarystr)
-        binarystr=str(0*x)+binarystr
-    return binarystr
-
-def convert_20(str):
-    value= int(str, 0)#convert to integer
-    low= -(2**19)
-    high= (2**19 -1)
-    if value<low or value>high:
-        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
-    if value<0:
-        value= 2**20 + value # 2's complement
-    return convert_binary(value, 20)
 
 
 
@@ -198,15 +209,6 @@ def U_TYPE_INSTRUCTION(instruction):
     print(binary_u_instruction)
     return binary_u_instruction
 
-def convert_21(str):
-    value= int(str, 0)#convert to integer
-    low= -(2**20)
-    high= (2**20 -1)
-    if value<low or value>high:
-        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
-    if value<0:
-        value= 2**21 + value # 2's complement
-    return convert_binary(value, 21)
 
 def J_TYPE_INSTRUCTION(instruction):  
     print("")
@@ -266,4 +268,3 @@ def main():
     
 main()
 write_to_file()
-
