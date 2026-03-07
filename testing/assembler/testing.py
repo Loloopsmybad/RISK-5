@@ -123,7 +123,7 @@ def convert_imm(str,bits):
     return convert_binary(value, bits)
 
 def convert_binary(n, bits):
-    n = int(n,0)
+    n = int(n)
     if n < -(2**(bits-1)) or n > (2**(bits-1) - 1):
         print("Overflow occured")
         exit()
