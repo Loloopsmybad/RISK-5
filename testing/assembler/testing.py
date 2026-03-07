@@ -114,16 +114,8 @@ def pre_process(subpart):#preprocess a sub_instruction
     for i in range(len(spaces)):#remove zeroes from the sub_instruction
         del subpart[spaces[i]]
 
-def convert_imm(str,bits):
-    value= int(str, 0)#convert to integer
-    low= -(2**(bits-1))
-    high= (2**(bits-1) -1)
-    if value<low or value>high:
-        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
-    return convert_binary(value, bits)
-
 def convert_binary(n, bits):
-    n = int(n)
+    n = int(n,0)
     if n < -(2**(bits-1)) or n > (2**(bits-1) - 1):
         print("Overflow occured")
         exit()
@@ -187,7 +179,7 @@ def S_TYPE_INSTRUCTION(instruction):
     func3=S_type_INSTRUCTIONS[subpart[0]][1]
     rs2= Registers[subpart[1]]
     rs1= Registers[subpart[3]]
-    imm12bits= convert_imm(subpart[2],12)
+    imm12bits= convert_binary(subpart[2],12)
 
     immstart= imm12bits[0:7] #imm[11:5]
     immend= imm12bits[7:12] #imm[4:0]
@@ -209,7 +201,7 @@ def B_TYPE_INSTRUCTION(instruction,current_pc,labels):
         offset= labels[subpart[3]]-current_pc
     else:
         offset=int(subpart[3],0)
-    imm13bit = convert_imm(str(offset),13)	
+    imm13bit = convert_binary(str(offset),13)	
 
     signbit=imm13bit[0]
     lastbit=imm13bit[1]
@@ -227,7 +219,7 @@ def U_TYPE_INSTRUCTION(instruction):
 
     opcode=U_type_INSTRUCTIONS[subpart[0]][0] #find the value of opcode from dictionary
     rd= Registers[subpart[1]]
-    imm20bit= convert_imm(subpart[2],20) #convert it into 20 bits
+    imm20bit= convert_binary(subpart[2],20) #convert it into 20 bits
 
     binary_u_instruction= imm20bit+rd+opcode
     print(binary_u_instruction, "U TYPE")
@@ -244,7 +236,7 @@ def J_TYPE_INSTRUCTION(instruction,labels,current_pc):
         offset= labels[subpart[2]]-current_pc
     else:
         offset=int(subpart[2],0)
-    imm21bit=convert_imm(str(offset),21)
+    imm21bit=convert_binary(str(offset),21)
 
     signbit= imm21bit[0]#imm[20] represents sign of imm[19] which is also bit 31
     target= imm21bit[1:9]#imm[19:12]
