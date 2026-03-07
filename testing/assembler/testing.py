@@ -174,10 +174,10 @@ def I_TYPE_INSTRUCTION(instruction):
     else:
         rd  = Registers[instruction[1]]
         rs1 = Registers[instruction[2]]
-        imm = to_binary(instruction[3], 12)
+        imm = convert_binary(instruction[3], 12)
 
     inst = imm + rs1 + func3 + rd + opcode
-    insbinary.append(inst)
+    binary_instructions.append(inst)
 
 
 
@@ -201,7 +201,8 @@ def S_TYPE_INSTRUCTION(instruction):
     immend= imm12bits[7:12] #imm[4:0]
     binary_s_instruction=immstart+rs2+rs1+func3+immend+opcode
     print(binary_s_instruction)
-    return binary_s_instruction
+    binary_instructions.append(binary_s_instruction)
+    # return binary_s_instruction
 
 def B_TYPE_INSTRUCTION(instruction):
     print("")
@@ -217,7 +218,8 @@ def convert_binary(value, bits):
     else:
         x=bits- len(binarystr)
         binarystr=str("0"*x)+binarystr
-    return binarystr
+    binary_instructions.append(binarystr)
+    # return binarystr
 
 def convert_20(str):
     value= int(str, 0)#convert to integer
@@ -246,7 +248,8 @@ def U_TYPE_INSTRUCTION(instruction):
 
     binary_u_instruction= opcode+rd+imm20bit
     print(binary_u_instruction)
-    return binary_u_instruction
+    binary_instructions.append(binary_u_instruction)
+    # return binary_u_instruction
 
 
 def J_TYPE_INSTRUCTION(instruction):  
@@ -268,7 +271,8 @@ def J_TYPE_INSTRUCTION(instruction):
     source= imm21bit[10:20]#imm[10:1]
     binary_j_instruction= signbit+source+next+target+rd+opcode
     print(binary_j_instruction)
-    return binary_j_instruction
+    binary_instructions.append(binary_j_instruction)
+    # return binary_j_instruction
   
 def main():
     x = input("file path ? ")
