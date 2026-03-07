@@ -66,7 +66,11 @@ R_type_INSTRUCTIONS={
     "sltu" : ["0110011", "011", "0000000"]
 }
 I_type_INSTRUCTIONS={
-
+# instruction   #opcode   #func3   #func7 (not used in I-type)
+    "lw"    : ["0000011", "010", None],
+    "addi"  : ["0010011", "000", None],
+    "sltiu" : ["0010011", "011", None],
+    "jalr"  : ["1100111", "000", None],
 }
 S_type_INSTRUCTIONS={
 #instruction   #opcode   #func3
@@ -145,7 +149,7 @@ def convert_21(str):
 
 
 def R_TYPE_INSTRUCTION(instruction):
-    print("")
+    print("")   
     print(instruction)
     binary_instruction=""
     binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
@@ -159,8 +163,23 @@ def R_TYPE_INSTRUCTION(instruction):
     binary_instructions.append(binary_instruction)
     
 def I_TYPE_INSTRUCTION(instruction):
-    print("")
-    print("I_TYPE_INSTRUCTION")
+    short = instruction[0]
+
+    opcode = I_type_INSTRUCTIONS[short][0]
+    func3  = I_type_INSTRUCTIONS[short][1]
+
+    if short == "lw":
+        rd  = Registers[instruction[1]]
+        imm = to_binary(instruction[2], 12)
+        rs1 = Registers[instruction[3]]
+    else:
+        rd  = Registers[instruction[1]]
+        rs1 = Registers[instruction[2]]
+        imm = to_binary(instruction[3], 12)
+
+    inst = imm + rs1 + func3 + rd + opcode
+    insbinary.append(inst)
+
 
 
 def S_TYPE_INSTRUCTION(instruction):
@@ -233,7 +252,6 @@ def J_TYPE_INSTRUCTION(instruction):
   
 def main():
     x = input("file path ? ")
-    remove_spaces=[]
     try:
         with open(x, 'r') as file:
             for line in file:
