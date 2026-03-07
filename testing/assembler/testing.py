@@ -300,7 +300,7 @@ def main():
         elif refined_instructions[i][0] in S_type_INSTRUCTIONS:
             S_TYPE_INSTRUCTION(refined_instructions[i])
         elif refined_instructions[i][0] in B_type_INSTRUCTIONS:
-            B_TYPE_INSTRUCTION(refined_instructions[i],pc,label)
+            B_TYPE_INSTRUCTION(refined_instructions[i],pc,labels)
         elif refined_instructions[i][0] in U_type_INSTRUCTIONS:
             U_TYPE_INSTRUCTION(refined_instructions[i])
         elif refined_instructions[i][0] in J_type_INSTRUCTIONS:
