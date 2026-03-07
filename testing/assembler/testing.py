@@ -150,6 +150,16 @@ def convert_21(str):
 
 def R_TYPE_INSTRUCTION(instruction):
     print("")   
+#i genreated this example when I was using AI to dry run
+"""Build order:  opcode + rd    + funct3 + rs1   + rs2   + funct7
+              0110011+ 00111 + 010    + 00110 + 01010 + 0000000
+Before [::-1]: "01100110011101000110010100000000"
+After  [::-1]: "00000000101001100010111001100110"  ← WRONG (fields flipped inside)
+Correct would: "00000000101000110010001110110011"
+""""
+"""def R_TYPE_INSTRUCTION(instruction):# the encoding done is wrong as it reverses the entire string 
+
+    print("")
     print(instruction)
     binary_instruction=""
     binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
@@ -159,6 +169,18 @@ def R_TYPE_INSTRUCTION(instruction):
     binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
     binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func3
     binary_instruction=binary_instruction[::-1]#reverse the string to get the correct order
+    print(binary_instruction)
+    binary_instructions.append(binary_instruction)"""
+def R_TYPE_INSTRUCTION(instruction):
+    print("")
+    print(instruction)
+    binary_instruction=""
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func7
+    binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
+    binary_instruction=binary_instruction+(Registers[instruction[2]])#rs1
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
+    binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
+    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
     print(binary_instruction)
     binary_instructions.append(binary_instruction)
     
@@ -185,7 +207,7 @@ def I_TYPE_INSTRUCTION(instruction):
 def S_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
-    subpart=re.split("[ ,()]",instruction) #break the instruction
+    subpart= instruction #break the instruction
     pre_process(subpart)
     print(subpart)
     operation = subpart[0]
@@ -208,13 +230,34 @@ def B_TYPE_INSTRUCTION(instruction):
     print("")
     print("B_TYPE_INSTRUCTION")
 
+def convert_binary(value, bits):
+    binarystr=""
+    while value>0:
+        binarystr= str(value%2)+binarystr
+        value=value//2
+    if (int(bits)<len(binarystr)):
+        print("Overflow")
+    else:
+        x=bits- len(binarystr)
+        binarystr=str("0"*x)+binarystr
+    return binarystr
+
+def convert_20(str):
+    value= int(str, 0)#convert to integer
+    low= -(2**19)
+    high= (2**19 -1)
+    if value<low or value>high:
+        print("Error: Immediate out of range") #ValueErrror bot I dont know to do it except for try and except. One of you can do it
+    if value<0:
+        value= 2**20 + value # 2's complement
+    return convert_binary(value, 20)
 
 
 
 def U_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
-    subpart=re.split("[ ,]",instruction) #break the instruction
+    subpart= instruction #break the instruction
     pre_process(subpart)
     print(subpart)
     operation= subpart[0]
@@ -232,7 +275,7 @@ def U_TYPE_INSTRUCTION(instruction):
 def J_TYPE_INSTRUCTION(instruction):  
     print("")
     print(instruction)
-    subpart=re.split("[ ,]",instruction) #break the instruction
+    subpart= instruction #break the instruction
     pre_process(subpart)
     print(subpart)
 
