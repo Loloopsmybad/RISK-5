@@ -149,29 +149,6 @@ def convert_21(str):
 
 
 def R_TYPE_INSTRUCTION(instruction):
-    print("")   
-#i genreated this example when I was using AI to dry run
-"""Build order:  opcode + rd    + funct3 + rs1   + rs2   + funct7
-              0110011+ 00111 + 010    + 00110 + 01010 + 0000000
-Before [::-1]: "01100110011101000110010100000000"
-After  [::-1]: "00000000101001100010111001100110"  ← WRONG (fields flipped inside)
-Correct would: "00000000101000110010001110110011"
-""""
-"""def R_TYPE_INSTRUCTION(instruction):# the encoding done is wrong as it reverses the entire string 
-
-    print("")
-    print(instruction)
-    binary_instruction=""
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
-    binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
-    binary_instruction=binary_instruction+(Registers[instruction[2]])#rs1
-    binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
-    binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func3
-    binary_instruction=binary_instruction[::-1]#reverse the string to get the correct order
-    print(binary_instruction)
-    binary_instructions.append(binary_instruction)"""
-def R_TYPE_INSTRUCTION(instruction):
     print("")
     print(instruction)
     binary_instruction=""
