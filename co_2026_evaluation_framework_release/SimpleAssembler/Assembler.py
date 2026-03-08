@@ -1,5 +1,6 @@
 import re 
 import sys
+import os
 '''
 note the ADRESSES ARE AS FFOLOWS
 
@@ -101,11 +102,17 @@ J_type_INSTRUCTIONS={
 refined_instructions=[]
 binary_instructions=[]
 def write_to_file(output_file_path_name, readable_path=None):
+    folder = os.path.dirname(output_file_path_name)
+    if folder:
+        os.makedirs(folder, exist_ok=True)
     with open(output_file_path_name, 'w') as file:
         for instruction in binary_instructions:
             file.write(instruction + '\n')
     print(f"Binary instructions written to '{output_file_path_name}'")
     if readable_path:
+        folder = os.path.dirname(readable_path)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
         with open(readable_path, 'w') as file:
             for instruction in binary_instructions:
                 file.write(instruction + '\n')
