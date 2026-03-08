@@ -100,12 +100,11 @@ J_type_INSTRUCTIONS={
 refined_instructions=[]
 binary_instructions=[]
 def write_to_file():
-    with open("output.txt", 'w') as file:
+    with open("errorgen.txt", 'w') as file:
         for instruction in binary_instructions:
             file.write(instruction + '\n')
     print("Binary instructions written to 'output.txt'")
     
-    print("Binary instructions written to 'output.txt'")
     
 def pre_process(subpart):#preprocess a sub_instruction
     spaces=[]
@@ -335,22 +334,7 @@ def main():
         pc+=4
         if virtual_halt(actual_inst):
             virtual_halt_count+=1
-        # if virtual_halt_count >= 1:
-        #     break
-    # remaining = []
-    # for j in range(i+1, len(refined_instructions)):
-    #     if refined_instructions[j][0].endswith(":") and len(refined_instructions[j]) == 1:  #fix for labels without instructions on the same line
-    #         continue                                          
-    #     inst = refined_instructions[j]                        
-    #     if inst[0].endswith(":") :
-    #         actual_inst = inst[1:] 
-    #     else :
-    #         actual_inst = inst
-    #     remaining.append(actual_inst)
-    # if remaining:
-    #     st= f"ERROR: CurrentPC={pc} Remaining instructions: {remaining}"
-    #     binary_instructions.append(st)    
-    
+
     if virtual_halt_count ==0:
         st=f"Error: No virtual halt instruction found.Use'beq zero, zero, 0'"
         binary_instructions.append(st)
