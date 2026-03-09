@@ -72,8 +72,15 @@ S_type_INSTRUCTIONS={
 
 }
 B_type_INSTRUCTIONS={
-
+#instruction  #opcode  #func3
+    "beq":["1100011","000"],
+    "bne":["1100011","001"],
+    "blt":["1100011","100"],
+    "bge":["1100011","101"],
+    "bltu":["1100011","110"],
+    "bgeu":["1100011","111"]
 }
+
 U_type_INSTRUCTIONS={
 
 }
@@ -118,9 +125,36 @@ def S_TYPE_INSTRUCTION(instruction):
     print("")
     print("S_TYPE_INSTRUCTION")
 
-def B_TYPE_INSTRUCTION(instruction):
-    print("")
-    print("B_TYPE_INSTRUCTION")
+def B_TYPE_INSTRUCTION(instruction,current_pc):
+	print("")
+	print(instruction)
+	subpart=instruction
+	optr=subpart[0]
+	rs1id=subpart[1]
+	rs2id=subpart[2]
+	imm_str=subpart[3]
+
+	opcode=B_type_INSTRUCTIONS[optr][0]
+	func3=B_type_INSTRUCTIONS[optr][1]
+	rs1=Registers[rs1id]
+	rs2=Registers[rs2id]
+
+	if imm_str in labels:
+		offset=labels[imm_str]-pc
+	else:
+		offset=int(imm_str)
+	
+	imm13bits = convert_13(str(offset))	
+
+	signbit=imm13bit[0]
+	lastbit=imm13bit[1]
+	mid1=imm13bit[2:8]
+	mid2=imm13bit[8:12]
+	
+	binary_b_instruction=signbit+mid1+rs2+rs1+func3+mid2+lastbit+opcode
+	print(binary_b_instruction)
+	binary_instructions.append(binary_b_instruction)
+  
 
 
 def U_TYPE_INSTRUCTION(instruction):
