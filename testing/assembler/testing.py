@@ -1,4 +1,6 @@
 import re 
+import sys
+import os
 '''
 note the ADRESSES ARE AS FFOLOWS
 
@@ -99,11 +101,22 @@ J_type_INSTRUCTIONS={
 
 refined_instructions=[]
 binary_instructions=[]
-def write_to_file():
-    with open("errorgen.txt", 'w') as file:
+def write_to_file(output_file_path_name, readable_path=None):
+    folder = os.path.dirname(output_file_path_name)
+    if folder:
+        os.makedirs(folder, exist_ok=True)
+    with open(output_file_path_name, 'w') as file:
         for instruction in binary_instructions:
             file.write(instruction + '\n')
-    print("Binary instructions written to 'output.txt'")
+    print(f"Binary instructions written to '{output_file_path_name}'")
+    if readable_path:
+        folder = os.path.dirname(readable_path)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
+        with open(readable_path, 'w') as file:
+            for instruction in binary_instructions:
+                file.write(instruction + '\n')
+        print(f"Readable output written to '{readable_path}'")
     
     
 def pre_process(subpart):#preprocess a sub_instruction
@@ -282,7 +295,11 @@ def virtual_halt(instruction):
     return 0
   
 def main():
-    x = input("file path ? ")
+    # x = input("file path ? ")
+    if len(sys.argv) < 3:
+        print("error please provide this format :   python3 Assembler.py <input_assembly_path> <output_machine_code_path> [output_readable_path] ")
+        return
+    x = sys.argv[1]
     try:
         with open(x, 'r') as file:
             for line in file:
@@ -339,6 +356,10 @@ def main():
         st=f"Error: No virtual halt instruction found.Use'beq zero, zero, 0'"
         binary_instructions.append(st)
 
-    
 main()
-write_to_file()
+output_path = sys.argv[2]
+if len(sys.argv) > 3:
+    readable_path = sys.argv[3]
+else:
+    readable_path=None
+write_to_file(output_path, readable_path)

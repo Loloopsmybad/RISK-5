@@ -315,6 +315,7 @@ def main():
             print(refined_instructions,len(refined_instructions))
     except FileNotFoundError:
         print("File not found.")
+        exit()
         return
     labels={}
     collect_labels(refined_instructions, labels)
@@ -342,7 +343,7 @@ def main():
             B_TYPE_INSTRUCTION(actual_inst, pc, labels)       
         elif op in U_type_INSTRUCTIONS:                       
             U_TYPE_INSTRUCTION(actual_inst)                   
-        elif op in J_type_INSTRUCTIONS:                       
+        elif op in J_type_INSTRUCTIONS:                    
             J_TYPE_INSTRUCTION(actual_inst, labels, pc)
         else:
             st= f"ERROR: Unknown instruction {op} at line {i+1}"
