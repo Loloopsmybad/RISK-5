@@ -363,4 +363,6 @@ if len(sys.argv) > 3:
     readable_path = sys.argv[3]
 else:
     readable_path=None
+
+
 write_to_file(output_path, readable_path)
