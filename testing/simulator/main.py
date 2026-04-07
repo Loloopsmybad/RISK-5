@@ -78,10 +78,10 @@ S_type_INSTRUCTIONS={
 }
 B_type_INSTRUCTIONS={
 #instruction  #opcode  #func3
-    "beq": ["1100011","000"],
-    "bne": ["1100011","001"],
-    "blt": ["1100011","100"],
-    "bge": ["1100011","101"],
+    "beq" : ["1100011","000"],
+    "bne" : ["1100011","001"],
+    "blt" : ["1100011","100"],
+    "bge" : ["1100011","101"],
     "bltu":["1100011","110"],
     "bgeu":["1100011","111"]
 }
@@ -137,24 +137,24 @@ def collect_labels(refined_instructions,labels):
 
 def R_TYPE_INSTRUCTION(instruction):#added try except
     try:
-        if   instruction[12:14]=="000" and instruction [25:31] =="0000000":
-            print("lol")
-        elif instruction[12:14]=="000" and instruction [25:31] =="0100000":
-            print("lol")
-        elif instruction[12:14]=="100" and instruction [25:31] =="0000000":
-            print("lol")
-        elif instruction[12:14]=="110" and instruction [25:31] =="0000000":
-            print("lol")
-        elif instruction[12:14]=="111" and instruction [25:31] =="0000000":
-            print("lol")
-        elif instruction[12:14]=="001" and instruction [25:31] =="0000000":
-            print("lol")
-        elif instruction[12:14]=="101" and instruction [25:31] =="0000000":
-            print("lol")
-        elif instruction[12:14]=="010" and instruction [25:31] =="0000000":
-            print("lol")
-        elif instruction[12:14]=="011" and instruction [25:31] =="0000000":
-            print("lol")
+        if   instruction[12:14]=="000" and instruction [25:31] =="0000000":#"add" 
+            print(instruction)
+        elif instruction[12:14]=="000" and instruction [25:31] =="0100000":#"sub" 
+            print(instruction)
+        elif instruction[12:14]=="100" and instruction [25:31] =="0000000":#"xor" 
+            print(instruction)
+        elif instruction[12:14]=="110" and instruction [25:31] =="0000000":#"or"  
+            print(instruction)
+        elif instruction[12:14]=="111" and instruction [25:31] =="0000000":#"and" 
+            print(instruction)
+        elif instruction[12:14]=="001" and instruction [25:31] =="0000000":#"sll" 
+            print(instruction)
+        elif instruction[12:14]=="101" and instruction [25:31] =="0000000":#"srl" 
+            print(instruction)
+        elif instruction[12:14]=="010" and instruction [25:31] =="0000000":#"slt" 
+            print(instruction)
+        elif instruction[12:14]=="011" and instruction [25:31] =="0000000":#"sltu"
+            print(instruction)
 
 
 
@@ -166,10 +166,14 @@ def R_TYPE_INSTRUCTION(instruction):#added try except
     
 def I_TYPE_INSTRUCTION(instruction):#added try except
     try:
-        if   instruction[0:6]=="0000011" and instruction[12:14]=="010":
-        elif instruction[0:6]=="0010011" and instruction[12:14]=="000":
-        elif instruction[0:6]=="0010011" and instruction[12:14]=="011":
-        elif instruction[0:6]=="1100111" and instruction[12:14]=="000":
+        if   instruction[0:6]=="0000011" and instruction[12:14]=="010":#"lw"   
+             print(instruction)
+        elif instruction[0:6]=="0010011" and instruction[12:14]=="000":#"addi" 
+             print(instruction)
+        elif instruction[0:6]=="0010011" and instruction[12:14]=="011":#"sltiu"
+             print(instruction)
+        elif instruction[0:6]=="1100111" and instruction[12:14]=="000":#"jalr" 
+             print(instruction)
 
         print(inst,"I TYPE")
         binary_instructions.append(inst)
@@ -179,8 +183,8 @@ def I_TYPE_INSTRUCTION(instruction):#added try except
 
 def S_TYPE_INSTRUCTION(instruction):# added try except
     try:
-        if  instruction[12:14]=="010":
-            print("lol")
+        if instruction[12:14]=="010":#"sw"
+             print(instruction)
             
         print(binary_s_instruction,"S TYPE")
         binary_instructions.append(binary_s_instruction)
@@ -190,12 +194,18 @@ def S_TYPE_INSTRUCTION(instruction):# added try except
 
 def B_TYPE_INSTRUCTION(instruction,current_pc,labels):# added try except
     try:
-        if   instruction[12:14]=="000":
-        elif instruction[12:14]=="001":
-        elif instruction[12:14]=="100":
-        elif instruction[12:14]=="101":
-        elif instruction[12:14]=="110":
-        elif instruction[12:14]=="111":
+        if   instruction[12:14]=="000":#"beq" 
+             print(instruction)
+        elif instruction[12:14]=="001":#"bne" 
+             print(instruction)
+        elif instruction[12:14]=="100":#"blt" 
+             print(instruction)
+        elif instruction[12:14]=="101":#"bge" 
+             print(instruction)
+        elif instruction[12:14]=="110":#"bltu"
+             print(instruction)
+        elif instruction[12:14]=="111":#"bgeu"
+             print(instruction)
 
 
         print(instruction,"B TYPE")  
@@ -206,8 +216,10 @@ def B_TYPE_INSTRUCTION(instruction,current_pc,labels):# added try except
 
 def U_TYPE_INSTRUCTION(instruction):# added try except
     try:
-        if   instruction[0:6]=="0110111":
-        elif instruction[0:6]=="0010111":
+        if   instruction[0:6]=="0110111":#"lui"  
+             print(instruction)
+        elif instruction[0:6]=="0010111":#"auipc"
+             print(instruction)
 
 
         print(instruction, "U TYPE")
@@ -218,8 +230,9 @@ def U_TYPE_INSTRUCTION(instruction):# added try except
 
 def J_TYPE_INSTRUCTION(instruction,labels,current_pc): # added try except
     try:
-        if   instruction[0:6]=="1101111":
-            
+        if instruction[0:6]=="1101111":#"jal" 
+             print(instruction)
+
         print(instruction, "J TYPE")
         instructions.append(binary_j_instruction)
     except (ValueError,IndexError,KeyError) as error:
