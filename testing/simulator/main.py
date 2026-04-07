@@ -124,7 +124,6 @@ def write_to_file(instruction,output_file_path_name,readable_path=None):
                 file.write(instruction + '\n')
         print(f"Readable output written to '{readable_path}'")
     
-
 def collect_labels(refined_instructions,labels):
     pc=0
     for inst in refined_instructions:
@@ -158,6 +157,7 @@ def R_TYPE_INSTRUCTION(instruction):#added try except
             print("lol")
 
 
+
         print(binary_instruction,"R TYPE")
         binary_instructions.append(binary_instruction)
     except (ValueError,IndexError,KeyError) as error:
@@ -166,15 +166,11 @@ def R_TYPE_INSTRUCTION(instruction):#added try except
     
 def I_TYPE_INSTRUCTION(instruction):#added try except
     try:
-        if   instruction[12:14]=="000" and instruction [25:31] =="0000000":
-            print("lol")
-        elif instruction[12:14]=="000" and instruction [25:31] =="0100000":
-            print("lol")
-        elif instruction[12:14]=="100" and instruction [25:31] =="0000000":
-            print("lol")
-        elif instruction[12:14]=="110" and instruction [25:31] =="0000000":
-            print("lol")
-            
+        if   instruction[0:6]=="0000011" and instruction[12:14]=="010":
+        elif instruction[0:6]=="0010011" and instruction[12:14]=="000":
+        elif instruction[0:6]=="0010011" and instruction[12:14]=="011":
+        elif instruction[0:6]=="1100111" and instruction[12:14]=="000":
+
         print(inst,"I TYPE")
         binary_instructions.append(inst)
     except (ValueError,IndexError,KeyError) as error:
@@ -183,7 +179,7 @@ def I_TYPE_INSTRUCTION(instruction):#added try except
 
 def S_TYPE_INSTRUCTION(instruction):# added try except
     try:
-        if   instruction[12:14]=="000" and instruction [25:31] =="0000000":
+        if  instruction[12:14]=="010":
             print("lol")
             
         print(binary_s_instruction,"S TYPE")
@@ -194,6 +190,14 @@ def S_TYPE_INSTRUCTION(instruction):# added try except
 
 def B_TYPE_INSTRUCTION(instruction,current_pc,labels):# added try except
     try:
+        if   instruction[12:14]=="000":
+        elif instruction[12:14]=="001":
+        elif instruction[12:14]=="100":
+        elif instruction[12:14]=="101":
+        elif instruction[12:14]=="110":
+        elif instruction[12:14]=="111":
+
+
         print(instruction,"B TYPE")  
         instructions.append(instruction)
     except (ValueError,IndexError,KeyError) as error:
@@ -202,6 +206,10 @@ def B_TYPE_INSTRUCTION(instruction,current_pc,labels):# added try except
 
 def U_TYPE_INSTRUCTION(instruction):# added try except
     try:
+        if   instruction[0:6]=="0110111":
+        elif instruction[0:6]=="0010111":
+
+
         print(instruction, "U TYPE")
         instructions.append(instruction)
     except (ValueError,IndexError,KeyError) as error:
@@ -210,6 +218,8 @@ def U_TYPE_INSTRUCTION(instruction):# added try except
 
 def J_TYPE_INSTRUCTION(instruction,labels,current_pc): # added try except
     try:
+        if   instruction[0:6]=="1101111":
+            
         print(instruction, "J TYPE")
         instructions.append(binary_j_instruction)
     except (ValueError,IndexError,KeyError) as error:
@@ -241,7 +251,7 @@ def main():
         return
 
     labels={}
-    collect_labels(refined_instructions, labels)
+    collect_labels(instructions, labels)
     pc_list=[]
     pc=0
     virtual_halt_count=0
