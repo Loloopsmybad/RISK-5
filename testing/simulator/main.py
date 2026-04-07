@@ -53,6 +53,7 @@ Registers = {#32 registers and their list
   "11110":  [],
   "11111":  [],
 }
+
 R_type_INSTRUCTIONS={
 #instruction   #opcode   #func3  #func 7
     "add"  : ["0110011", "000", "0000000"],
@@ -82,8 +83,8 @@ B_type_INSTRUCTIONS={
     "bne" : ["1100011","001"],
     "blt" : ["1100011","100"],
     "bge" : ["1100011","101"],
-    "bltu":["1100011","110"],
-    "bgeu":["1100011","111"]
+    "bltu": ["1100011","110"],
+    "bgeu": ["1100011","111"]
 }
 U_type_INSTRUCTIONS={
 #instruction   #opcode
@@ -94,20 +95,33 @@ J_type_INSTRUCTIONS={
 #instruction   #opcode
     "jal"  : ["1101111"],
 }
+# [0:7]   = funct7
+# [7:12]  = rs2
+# [12:17] = rs1
+# [17:20] = funct3
+# [20:25] = rd
+# [25:32] = opcode
 instructions=[]
-def segrigator(instuction):
-    if instruction[0:6]=="0110011":
-         R_TYPE_INSTRUCTION(instruction)
-    elif instruction[0:6]in ["0000011","0010011","0010011","1100111"]:
-         I_TYPE_INSTRUCTION(instruction)
-    elif instruction[0:6]in["1100011","1100011","1100011","1100011","1100011","1100011"]:
-         S_TYPE_INSTRUCTION(instruction)
-    elif instruction[0:6]=="1100011":
-         B_TYPE_INSTRUCTION(instruction)
-    elif instruction[0:6]in["0110111","0010111"]:
+def segrigator(instruction):
+    if   instruction[25:32]=="0110011":
+        #  write_to_file(instruction,output_path,readable_path)
+        print("R-TYPE INSTRUCTION",instruction)
+        R_TYPE_INSTRUCTION(instruction)
+    elif instruction[25:32]in ["0000011","0010011","0010011","1100111"]:
+        print("I-TYPE INSTRUCTION",instruction)
+        I_TYPE_INSTRUCTION(instruction)
+    elif instruction[25:32]=="0100011":
+        print("S-TYPE INSTRUCTION",instruction)
+        S_TYPE_INSTRUCTION(instruction)
+    # elif instruction[32-6:32]=="1100011":
+    #      print("B-TYPE INSTRUCTION",instruction)
+    #      B_TYPE_INSTRUCTION(instruction)
+    elif instruction[32-6:32]in["0110111","0010111"]:
+         print("U-TYPE INSTRUCTION",instruction)
          U_TYPE_INSTRUCTION(instruction)
-    elif instruction[0:6]=="1101111":
-         J_TYPE_INSTRUCTION(instruction)
+    # elif instruction[32-6:32]=="1101111":
+    #     print("J-TYPE INSTRUCTION",instruction)
+    #     J_TYPE_INSTRUCTION(instruction)
 
 def write_to_file(instruction,output_file_path_name,readable_path=None):
     folder = os.path.dirname(output_file_path_name)
@@ -126,7 +140,7 @@ def write_to_file(instruction,output_file_path_name,readable_path=None):
     
 def collect_labels(refined_instructions,labels):
     pc=0
-    for inst in refined_instructions:
+    for inst in instructions:
         if inst[0].endswith(":"):
             label=inst[0][:-1]#remove colon
             labels[label]=pc
@@ -137,104 +151,98 @@ def collect_labels(refined_instructions,labels):
 
 def R_TYPE_INSTRUCTION(instruction):#added try except
     try:
-        if   instruction[12:14]=="000" and instruction [25:31] =="0000000":#"add" 
-            print(instruction)
-        elif instruction[12:14]=="000" and instruction [25:31] =="0100000":#"sub" 
-            print(instruction)
-        elif instruction[12:14]=="100" and instruction [25:31] =="0000000":#"xor" 
-            print(instruction)
-        elif instruction[12:14]=="110" and instruction [25:31] =="0000000":#"or"  
-            print(instruction)
-        elif instruction[12:14]=="111" and instruction [25:31] =="0000000":#"and" 
-            print(instruction)
-        elif instruction[12:14]=="001" and instruction [25:31] =="0000000":#"sll" 
-            print(instruction)
-        elif instruction[12:14]=="101" and instruction [25:31] =="0000000":#"srl" 
-            print(instruction)
-        elif instruction[12:14]=="010" and instruction [25:31] =="0000000":#"slt" 
-            print(instruction)
-        elif instruction[12:14]=="011" and instruction [25:31] =="0000000":#"sltu"
-            print(instruction)
+        if   instruction[17:20]=="000" and instruction [0:7] =="0000000":#"add" 
+            print("add",instruction)
+        elif instruction[17:20]=="000" and instruction [0:7] =="0100000":#"sub" 
+            print("sub",instruction)
+        elif instruction[17:20]=="100" and instruction [0:7] =="0000000":#"xor" 
+            print("xor",instruction)
+        elif instruction[17:20]=="110" and instruction [0:7] =="0000000":#"or"  
+            print("or",instruction)
+        elif instruction[17:20]=="111" and instruction [0:7] =="0000000":#"and" 
+            print("and",instruction)
+        elif instruction[17:20]=="001" and instruction [0:7] =="0000000":#"sll" 
+            print("sll",instruction)
+        elif instruction[17:20]=="101" and instruction [0:7] =="0000000":#c 
+            print("sll",instruction)
+        elif instruction[17:20]=="010" and instruction [0:7] =="0000000":#"slt" 
+            print("slt",instruction)
+        elif instruction[17:20]=="011" and instruction [0:7] =="0000000":#"sltu"
+            print("sltu",instruction)
 
-
-
-        print(binary_instruction,"R TYPE")
-        binary_instructions.append(binary_instruction)
+        # write_to_file(instruction,output_path,readable_path)
     except (ValueError,IndexError,KeyError) as error:
         st= f"Error processing instruction: {instruction}. Error: {error}"
         binary_instructions.append(st)
     
 def I_TYPE_INSTRUCTION(instruction):#added try except
     try:
-        if   instruction[0:6]=="0000011" and instruction[12:14]=="010":#"lw"   
+        if   instruction[25:32]=="0000011" and instruction[17:20]=="010":#"lw"   
              print(instruction)
-        elif instruction[0:6]=="0010011" and instruction[12:14]=="000":#"addi" 
+        elif instruction[25:32]=="0010011" and instruction[17:20]=="000":#"addi" 
              print(instruction)
-        elif instruction[0:6]=="0010011" and instruction[12:14]=="011":#"sltiu"
+        elif instruction[25:32]=="0010011" and instruction[17:20]=="011":#"sltiu"
              print(instruction)
-        elif instruction[0:6]=="1100111" and instruction[12:14]=="000":#"jalr" 
+        elif instruction[25:32]=="1100111" and instruction[17:20]=="000":#"jalr" 
              print(instruction)
 
-        print(inst,"I TYPE")
-        binary_instructions.append(inst)
+        
+        # write_to_file(instruction,output_path,readable_path)
     except (ValueError,IndexError,KeyError) as error:
         st= f"Error processing instruction: {instruction}. Error: {error}"
         binary_instructions.append(st)
 
 def S_TYPE_INSTRUCTION(instruction):# added try except
     try:
-        if instruction[12:14]=="010":#"sw"
+        if instruction[17:20]=="010":#"sw"
              print(instruction)
             
-        print(binary_s_instruction,"S TYPE")
-        binary_instructions.append(binary_s_instruction)
+        
+        # write_to_file(instruction,output_path,readable_path)
     except (ValueError,IndexError,KeyError) as error:
         st= f"Error processing instruction: {instruction}. Error: {error}"
         binary_instructions.append(st)
 
 def B_TYPE_INSTRUCTION(instruction,current_pc,labels):# added try except
     try:
-        if   instruction[12:14]=="000":#"beq" 
+        if   instruction[17:20]=="000":#"beq" 
              print(instruction)
-        elif instruction[12:14]=="001":#"bne" 
+        elif instruction[17:20]=="001":#"bne" 
              print(instruction)
-        elif instruction[12:14]=="100":#"blt" 
+        elif instruction[17:20]=="100":#"blt" 
              print(instruction)
-        elif instruction[12:14]=="101":#"bge" 
+        elif instruction[17:20]=="101":#"bge" 
              print(instruction)
-        elif instruction[12:14]=="110":#"bltu"
+        elif instruction[17:20]=="110":#"bltu"
              print(instruction)
-        elif instruction[12:14]=="111":#"bgeu"
+        elif instruction[17:20]=="111":#"bgeu"
              print(instruction)
 
 
-        print(instruction,"B TYPE")  
-        instructions.append(instruction)
+        
+        # write_to_file(instruction,output_path,readable_path)
     except (ValueError,IndexError,KeyError) as error:
         st= f"Error processing instruction: {instruction}. Error: {error}"
         binary_instructions.append(st)
 
 def U_TYPE_INSTRUCTION(instruction):# added try except
     try:
-        if   instruction[0:6]=="0110111":#"lui"  
+        if   instruction[25:32]=="0110111":#"lui"  
              print(instruction)
-        elif instruction[0:6]=="0010111":#"auipc"
+        elif instruction[25:32]=="0010111":#"auipc"
              print(instruction)
 
-
-        print(instruction, "U TYPE")
-        instructions.append(instruction)
+        # write_to_file(instruction,output_path,readable_path)
     except (ValueError,IndexError,KeyError) as error:
         st= f"Error processing instruction: {instruction}. Error: {error}"
         binary_instructions.append(st)
 
 def J_TYPE_INSTRUCTION(instruction,labels,current_pc): # added try except
     try:
-        if instruction[0:6]=="1101111":#"jal" 
+        if instruction[25:32]=="1101111":#"jal" 
              print(instruction)
 
-        print(instruction, "J TYPE")
-        instructions.append(binary_j_instruction)
+        write_to_file(instruction,output_path,readable_path)
     except (ValueError,IndexError,KeyError) as error:
         st= f"Error processing instruction: {instruction}. Error: {error}"
         instructions.append(st)
@@ -247,38 +255,38 @@ def virtual_halt(instruction):
     return 0
   
 def main():
-    # x = input("file path ? ")
-    if len(sys.argv) < 3:
-        print("error please provide this format :   python3 Assembler.py <input_assembly_path> <output_machine_code_path> [output_readable_path] ")
-        return
-    x = sys.argv[1]
+    x = input("file path ? ")
+    # if len(sys.argv) < 3:
+    #     print("error please provide this format :   python3 Assembler.py <input_assembly_path> <output_machine_code_path> [output_readable_path] ")
+    #     return
+    # x = sys.argv[1]
     try:
         with open(x, 'r') as file:
             for line in file:
-                line=line[::-1]
+                line=line.strip()
                 instructions.append(line)
-            print("-->",refined_instructions,len(refined_instructions))
+        print("-->",instructions,len(instructions))
     except FileNotFoundError:
         print("File not found.")
         exit()
         return
-
-    labels={}
-    collect_labels(instructions, labels)
-    pc_list=[]
-    pc=0
-    virtual_halt_count=0
-    if virtual_halt_count ==0:
-        st=f"Error: No virtual halt instruction found.Use'beq zero, zero, 0'"
-        binary_instructions.append(st)
-
+    for i in instructions:
+        segrigator(i)
+    # labels={}
+    # collect_labels(instructions, labels)
+    # pc_list=[]
+    # pc=0
+    # virtual_halt_count=0
+    # if virtual_halt_count ==0:
+    #     st=f"Error: No virtual halt instruction found.Use'beq zero, zero, 0'"
+    #     binary_instructions.append(st)
 
 main()
-output_path = sys.argv[2]
-if len(sys.argv) > 3:
-    readable_path = sys.argv[3]
-else:
-    readable_path=None
+# output_path = sys.argv[2]
+# if len(sys.argv) > 3:
+#     readable_path = sys.argv[3]
+# else:
+#     readable_path=None
 
 
-write_to_file(instruction,output_path,readable_path)
+# write_to_file(instruction,output_path,readable_path)
