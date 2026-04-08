@@ -1,7 +1,7 @@
 addi a0,zero,4
 addi t0,zero,0
 addi t1,zero,1
-addi sp,sp,-4
+addi sp,sp,
 loop: add t0,t0,t1
 addi t1,t1,1
 slt t2,t1,a0
@@ -21,4 +21,4 @@ end: addi sp,sp,-4
 sw t0,0(sp)
 beq zero,zero,0
 error: addi t4,zero,1
-beq zero,zero,end
+beq zero,zero,
