@@ -20,81 +20,40 @@ note the ADRESSES ARE AS FFOLOWS
 | 111_{00-11}               | x28-31   | t3-6     | Temporaries                          | Caller |
 '''
 Registers = {#32 registers and their list
-  "00000":  [],
-  "00010":  [],
-  "00001":  [],
-  "00011":  [],
-  "00100":  [],
-  "00101":  [],
-  "00110":  [],
-  "00111":  [],
-  "01000":  [],
-  "01001":  [],
-  "01010":  [],
-  "01011":  [],
-  "01100":  [],
-  "01101":  [],
-  "01110":  [],
-  "01111":  [],
-  "10000":  [],
-  "10001":  [],
-  "10010":  [],
-  "10011":  [],
-  "10100":  [],
-  "10101":  [],
-  "10110":  [],
-  "10111":  [],
-  "11000":  [],
-  "11001":  [],
-  "11010":  [],
-  "11011":  [],
-  "11100":  [],
-  "11101":  [],
-  "11110":  [],
-  "11111":  [],
+  "00000":  [0],
+  "00010":  [0],
+  "00001":  [0],
+  "00011":  [0],
+  "00100":  [0],
+  "00101":  [0],
+  "00110":  [0],
+  "00111":  [0],
+  "01000":  [0],
+  "01001":  [0],
+  "01010":  [0],
+  "01011":  [0],
+  "01100":  [0],
+  "01101":  [0],
+  "01110":  [0],
+  "01111":  [0],
+  "10000":  [0],
+  "10001":  [0],
+  "10010":  [0],
+  "10011":  [0],
+  "10100":  [0],
+  "10101":  [0],
+  "10110":  [0],
+  "10111":  [0],
+  "11000":  [0],
+  "11001":  [0],
+  "11010":  [0],
+  "11011":  [0],
+  "11100":  [0],
+  "11101":  [0],
+  "11110":  [0],
+  "11111":  [0],
 }
-
-R_type_INSTRUCTIONS={
-#instruction   #opcode   #func3  #func 7
-    "add"  : ["0110011", "000", "0000000"],
-    "sub"  : ["0110011", "000", "0100000"],
-    "xor"  : ["0110011", "100", "0000000"],
-    "or"   : ["0110011", "110", "0000000"],
-    "and"  : ["0110011", "111", "0000000"],
-    "sll"  : ["0110011", "001", "0000000"],
-    "srl"  : ["0110011", "101", "0000000"],
-    "slt"  : ["0110011", "010", "0000000"],
-    "sltu" : ["0110011", "011", "0000000"]
-}
-I_type_INSTRUCTIONS={
-# instruction   #opcode   #func3   #func7 (not used in I-type)
-    "lw"    : ["0000011", "010", None],
-    "addi"  : ["0010011", "000", None],
-    "sltiu" : ["0010011", "011", None],
-    "jalr"  : ["1100111", "000", None],
-}
-S_type_INSTRUCTIONS={
-#instruction   #opcode   #func3
-    "sw"   : ["0100011", "010"],
-}
-B_type_INSTRUCTIONS={
-#instruction  #opcode  #func3
-    "beq" : ["1100011","000"],
-    "bne" : ["1100011","001"],
-    "blt" : ["1100011","100"],
-    "bge" : ["1100011","101"],
-    "bltu": ["1100011","110"],
-    "bgeu": ["1100011","111"]
-}
-U_type_INSTRUCTIONS={
-#instruction   #opcode
-    "lui"  : ["0110111"],
-    "auipc": ["0010111"],
-}
-J_type_INSTRUCTIONS={
-#instruction   #opcode
-    "jal"  : ["1101111"],
-}
+# PLEASE REFER THIS INDEX ENCODING 
 # [0:7]   = funct7
 # [7:12]  = rs2
 # [12:17] = rs1
@@ -152,7 +111,9 @@ def collect_labels(refined_instructions,labels):
 def R_TYPE_INSTRUCTION(instruction):#added try except
     try:
         if   instruction[17:20]=="000" and instruction [0:7] =="0000000":#"add" 
-            print("add",instruction)
+
+            Registers[instruction[20:25]]=[int(instruction[7:12],2)+int(instruction[12:17],2)]
+            print("add",Registers[instruction[20:25]])
         elif instruction[17:20]=="000" and instruction [0:7] =="0100000":#"sub" 
             print("sub",instruction)
         elif instruction[17:20]=="100" and instruction [0:7] =="0000000":#"xor" 
@@ -290,3 +251,57 @@ main()
 
 
 # write_to_file(instruction,output_path,readable_path)
+
+
+
+
+
+
+
+
+
+
+
+#=================================FOR REFERENCE=================================================
+
+#                          R_type_INSTRUCTIONS={
+#                           #instruction   #opcode   #func3  #func 7
+#                               "add"  : ["0110011", "000", "0000000"],
+#                               "sub"  : ["0110011", "000", "0100000"],
+#                               "xor"  : ["0110011", "100", "0000000"],
+#                               "or"   : ["0110011", "110", "0000000"],
+#                               "and"  : ["0110011", "111", "0000000"],
+#                               "sll"  : ["0110011", "001", "0000000"],
+#                               "srl"  : ["0110011", "101", "0000000"],
+#                               "slt"  : ["0110011", "010", "0000000"],
+#                               "sltu" : ["0110011", "011", "0000000"]
+#                           }
+#                           I_type_INSTRUCTIONS={
+#                           # instruction   #opcode   #func3   #func7 (not used in I-type)
+#                               "lw"    : ["0000011", "010", None],
+#                               "addi"  : ["0010011", "000", None],
+#                               "sltiu" : ["0010011", "011", None],
+#                               "jalr"  : ["1100111", "000", None],
+#                           }
+#                           S_type_INSTRUCTIONS={
+#                           #instruction   #opcode   #func3
+#                               "sw"   : ["0100011", "010"],
+#                           }
+#                           B_type_INSTRUCTIONS={
+#                           #instruction  #opcode  #func3
+#                               "beq" : ["1100011","000"],
+#                               "bne" : ["1100011","001"],
+#                               "blt" : ["1100011","100"],
+#                               "bge" : ["1100011","101"],
+#                               "bltu": ["1100011","110"],
+#                               "bgeu": ["1100011","111"]
+#                           }
+#                           U_type_INSTRUCTIONS={
+#                           #instruction   #opcode
+#                               "lui"  : ["0110111"],
+#                               "auipc": ["0010111"],
+#                           }
+#                           J_type_INSTRUCTIONS={
+#                           #instruction   #opcode
+#                               "jal"  : ["1101111"],
+#                           }
