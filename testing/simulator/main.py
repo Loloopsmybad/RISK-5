@@ -110,47 +110,47 @@ def collect_labels(refined_instructions,labels):
 def R_TYPE_INSTRUCTION(instruction):
     try:
         funct7 = instruction[0:7]
+        funct3 = instruction[17:20] 
+        rd     = instruction[20:25]
         rs2    = instruction[7:12]
         rs1    = instruction[12:17]
-        funct3 = instruction[17:20]
-        rd     = instruction[20:25]
+        
         rs1_val = Registers[rs1][0]
         rs2_val = Registers[rs2][0] 
+
         if   funct3 == "000" and funct7 == "0000000":  # add
             Registers[rd] = [rs1_val + rs2_val]
-            print("add", Registers[rd])
+            print("add",Registers[rd])
         elif funct3 == "000" and funct7 == "0100000":  # sub
             Registers[rd] = [rs1_val - rs2_val]
-            print("sub", Registers[rd])
+            print("sub",Registers[rd])
         elif funct3 == "100" and funct7 == "0000000":  # xor
             Registers[rd] = [rs1_val ^ rs2_val]
-            print("xor", Registers[rd])
+            print("xor",Registers[rd])
         elif funct3 == "110" and funct7 == "0000000":  # or
             Registers[rd] = [rs1_val | rs2_val]
-            print("or", Registers[rd])
+            print("or",Registers[rd])
         elif funct3 == "111" and funct7 == "0000000":  # and
             Registers[rd] = [rs1_val & rs2_val]
-            print("and", Registers[rd])
+            print("and",Registers[rd])
         elif funct3 == "001" and funct7 == "0000000":  # sll
             temp = rs2_val & 0x1F
             Registers[rd] = [rs1_val << temp]
-            print("sll", Registers[rd])
+            print("sll",Registers[rd])
         elif funct3 == "101" and funct7 == "0000000":  # srl
             temp = rs2_val & 0x1F
             Registers[rd] = [(rs1_val & 0xFFFFFFFF) >> temp]  # logical shift
-            print("srl", Registers[rd])
+            print("srl",Registers[rd])
         elif funct3 == "101" and funct7 == "0100000":  # sra
             temp = rs2_val & 0x1F
             Registers[rd] = [rs1_val >> temp]  # arithmetic shift (Python preserves sign)
-            print("sra", Registers[rd])
+            print("sra",Registers[rd])
         elif funct3 == "010" and funct7 == "0000000":  # slt
             Registers[rd] = [1 if rs1_val < rs2_val else 0]
-            print("slt", Registers[rd])
+            print("slt",Registers[rd])
         elif funct3 == "011" and funct7 == "0000000":  # sltu
             Registers[rd] = [1 if (rs1_val & 0xFFFFFFFF) < (rs2_val & 0xFFFFFFFF) else 0]
-            print("sltu", Registers[rd])
-        else:
-            print(f"Unknown R-type instruction: funct3={funct3}, funct7={funct7}")
+            print("sltu",Registers[rd])
 
     except (ValueError, IndexError, KeyError) as error:
         print(f"Error processing R-type instruction: {instruction}. Error: {error}")
