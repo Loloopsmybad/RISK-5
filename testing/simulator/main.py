@@ -183,27 +183,125 @@ def S_TYPE_INSTRUCTION(instruction):# added try except
         st= f"Error processing instruction: {instruction}. Error: {error}"
         binary_instructions.append(st)
 
-def B_TYPE_INSTRUCTION(instruction,current_pc,labels):# added try except
-    try:
-        if   instruction[17:20]=="000":#"beq" 
-             print(instruction)
-        elif instruction[17:20]=="001":#"bne" 
-             print(instruction)
-        elif instruction[17:20]=="100":#"blt" 
-             print(instruction)
-        elif instruction[17:20]=="101":#"bge" 
-             print(instruction)
-        elif instruction[17:20]=="110":#"bltu"
-             print(instruction)
-        elif instruction[17:20]=="111":#"bgeu"
-             print(instruction)
+def sign_extend(binary_str):
+    bits=len(binary_str)
+    value=int(binary_str, 2)
+    if binary_str[0]=='1':  
+        value-=(1 << bits)
+    return value
 
 
-        
-        # write_to_file(instruction,output_path,readable_path)
-    except (ValueError,IndexError,KeyError) as error:
-        st= f"Error processing instruction: {instruction}. Error: {error}"
-        binary_instructions.append(st)
+def bin_to_signed(val):
+    val &=0xFFFFFFFF
+    if val & 0x80000000:
+        return val - 0x100000000
+    return val
+
+def btype_imm(instr):
+   
+    imm12=instr[0]         
+    imm10_5=instr[1:7]     
+    imm4_1=instr[20:24]    
+    imm11=instr[24]       
+
+    imm_bin=imm12+imm11+imm10_5+imm4_1+"0"
+    return sign_extend(imm_bin)
+
+
+def simulate_b_type(instr, pc,registers):
+
+    if len(instr)!=32 or any(c not in '01' for c in instr):
+        raise ValueError("Instruction must be a 32-bit binary string")
+    opcode = instr[25:32]
+    if opcode!="1100011":
+        raise ValueError("Not a B-type instruction")
+    funct3=instr[17:20]
+    rs1=int(instr[12:17], 2)
+    rs2=int(instr[7:12], 2)
+    imm=btype_imm(instr)
+    
+    val1_unsigned=registers[rs1] & 0xFFFFFFFF
+    val2_unsigned=registers[rs2] & 0xFFFFFFFF
+
+    val1_signed=bin_to_signed(registers[rs1])
+    val2_signed =bin_to_signed(registers[rs2])
+    
+    taken=False
+    branch_name=""
+    if funct3=="000":     
+        branch_name="beq"
+        taken=(val1_signed==val2_signed)
+
+    elif funct3=="001":    
+        branch_name="bne"
+        taken=(val1_signed!=val2_signed)
+
+    elif funct3=="100":   
+        branch_name="blt"
+        taken=(val1_signed < val2_signed)
+
+    elif funct3 == "101":   
+        branch_name = "bge"
+        taken = (val1_signed >= val2_signed)
+
+    elif funct3=="110":   
+        branch_name ="bltu"
+        taken=(val1_unsigned < val2_unsigned)
+
+    elif funct3=="111":    
+        branch_name ="bgeu"
+        taken=(val1_unsigned >= val2_unsigned)
+
+    else:
+        raise ValueError("Invalid B-type funct3")
+
+    if taken:
+        new_pc=pc + imm
+    else:
+        new_pc=pc + 4
+    if new_pc % 4 != 0:
+        raise ValueError("Misaligned PC")
+    registers[0]=0
+
+    output=(
+        f"PC={pc} | {branch_name} x{rs1}, x{rs2}, imm={imm} | "
+        f"x{rs1}={registers[rs1]}, x{rs2}={registers[rs2]} | "
+        f"taken={taken} | new_PC={new_pc}"
+    )
+    return new_pc, output
+
+
+def run_btype_simulator(input_file, output_file):
+    registers=[0] * 32
+    
+    registers[1]=10
+    registers[2]=10
+    registers[3]=5
+    registers[4]=20
+
+    pc=0
+    outputs=[]
+    with open(input_file, "r") as f:
+        instructions=[line.strip() for line in f if line.strip()]
+
+    for instr in instructions:
+        try:
+            opcode=instr[25:32]
+
+            if opcode=="1100011":   
+                pc, out=simulate_b_type(instr, pc, registers)
+                outputs.append(out)
+            else:
+                outputs.append(f"PC={pc} | Not B-type, skipped")
+                pc+=4
+            registers[0]=0
+        except Exception as e:
+            outputs.append(f"PC={pc} | ERROR: {str(e)}")
+            pc+=4
+
+    with open(output_file, "w") as f:
+        for line in outputs:
+            f.write(line + "\n")
 
 def U_TYPE_INSTRUCTION(instruction):# added try except
     try:
