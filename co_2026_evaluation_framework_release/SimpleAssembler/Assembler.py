@@ -63,7 +63,6 @@ R_type_INSTRUCTIONS={
     "and"  : ["0110011", "111", "0000000"],
     "sll"  : ["0110011", "001", "0000000"],
     "srl"  : ["0110011", "101", "0000000"],
-    "sra"  : ["0110011", "101", "0100000"],#sra was repeated
     "slt"  : ["0110011", "010", "0000000"],
     "sltu" : ["0110011", "011", "0000000"]
 }
@@ -80,14 +79,13 @@ S_type_INSTRUCTIONS={
 }
 B_type_INSTRUCTIONS={
 #instruction  #opcode  #func3
-    "beq":["1100011","000"],
-    "bne":["1100011","001"],
-    "blt":["1100011","100"],
-    "bge":["1100011","101"],
+    "beq": ["1100011","000"],
+    "bne": ["1100011","001"],
+    "blt": ["1100011","100"],
+    "bge": ["1100011","101"],
     "bltu":["1100011","110"],
     "bgeu":["1100011","111"]
 }
-
 U_type_INSTRUCTIONS={
 #instruction   #opcode
     "lui"  : ["0110111"],
@@ -316,6 +314,7 @@ def main():
             print(refined_instructions,len(refined_instructions))
     except FileNotFoundError:
         print("File not found.")
+        exit()
         return
     labels={}
     collect_labels(refined_instructions, labels)
@@ -343,7 +342,7 @@ def main():
             B_TYPE_INSTRUCTION(actual_inst, pc, labels)       
         elif op in U_type_INSTRUCTIONS:                       
             U_TYPE_INSTRUCTION(actual_inst)                   
-        elif op in J_type_INSTRUCTIONS:                       
+        elif op in J_type_INSTRUCTIONS:                    
             J_TYPE_INSTRUCTION(actual_inst, labels, pc)
         else:
             st= f"ERROR: Unknown instruction {op} at line {i+1}"
@@ -357,10 +356,13 @@ def main():
         st=f"Error: No virtual halt instruction found.Use'beq zero, zero, 0'"
         binary_instructions.append(st)
 
+
 main()
 output_path = sys.argv[2]
 if len(sys.argv) > 3:
     readable_path = sys.argv[3]
 else:
     readable_path=None
+
+
 write_to_file(output_path, readable_path)
