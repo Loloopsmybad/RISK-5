@@ -175,9 +175,9 @@ def write_reg(key, val):
         return
     Registers[key][0]=to_s32(val)
 def mem_load(addr):
-    return memory.get(addr & -4, 0)
+    return memory.get(addr & ~3, 0)
 def mem_store(addr, val):
-    memory[addr & -4] = to_s32(val)
+    memory[addr & ~3] = to_s32(val)
     
 def R_TYPE_INSTRUCTION(instruction):
     try:
@@ -344,7 +344,7 @@ def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
         print(f"error B type:{instruction}error: {error}")
         return 
 
-def U_TYPE_INSTRUCTION(instruction,pc):
+def U_TYPE_INSTRUCTION(instruction, current_pc=0):
     try:
         opc=instruction[25:32]
         rd =instruction[20:25]
