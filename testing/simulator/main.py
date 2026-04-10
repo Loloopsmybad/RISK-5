@@ -63,7 +63,6 @@ Registers = {#32 registers and their list
 instructions=[]
 def segrigator(instruction):
     if   instruction[25:32]=="0110011":
-        #  write_to_file(instruction,output_path,readable_path)
         print("R-TYPE INSTRUCTION",instruction)
         R_TYPE_INSTRUCTION(instruction)
     elif instruction[25:32]in ["0000011","0010011","0010011","1100111"]:
@@ -108,33 +107,53 @@ def collect_labels(refined_instructions,labels):
         else:
             pc+=4
 
-def R_TYPE_INSTRUCTION(instruction):#added try except
+def R_TYPE_INSTRUCTION(instruction):
     try:
-        if   instruction[17:20]=="000" and instruction [0:7] =="0000000":#"add" 
+        funct7 = instruction[0:7]
+        funct3 = instruction[17:20] 
+        rd     = instruction[20:25]
+        rs2    = instruction[7:12]
+        rs1    = instruction[12:17]
+        
+        rs1_val = Registers[rs1][0]
+        rs2_val = Registers[rs2][0] 
 
-            Registers[instruction[20:25]]=[int(instruction[7:12],2)+int(instruction[12:17],2)]
-            print("add",Registers[instruction[20:25]])
-        elif instruction[17:20]=="000" and instruction [0:7] =="0100000":#"sub" 
-            print("sub",instruction)
-        elif instruction[17:20]=="100" and instruction [0:7] =="0000000":#"xor" 
-            print("xor",instruction)
-        elif instruction[17:20]=="110" and instruction [0:7] =="0000000":#"or"  
-            print("or",instruction)
-        elif instruction[17:20]=="111" and instruction [0:7] =="0000000":#"and" 
-            print("and",instruction)
-        elif instruction[17:20]=="001" and instruction [0:7] =="0000000":#"sll" 
-            print("sll",instruction)
-        elif instruction[17:20]=="101" and instruction [0:7] =="0000000":#c 
-            print("sll",instruction)
-        elif instruction[17:20]=="010" and instruction [0:7] =="0000000":#"slt" 
-            print("slt",instruction)
-        elif instruction[17:20]=="011" and instruction [0:7] =="0000000":#"sltu"
-            print("sltu",instruction)
+        if   funct3 == "000" and funct7 == "0000000":  # add
+            Registers[rd] = [rs1_val + rs2_val]
+            print("add",Registers[rd])
+        elif funct3 == "000" and funct7 == "0100000":  # sub
+            Registers[rd] = [rs1_val - rs2_val]
+            print("sub",Registers[rd])
+        elif funct3 == "100" and funct7 == "0000000":  # xor
+            Registers[rd] = [rs1_val ^ rs2_val]
+            print("xor",Registers[rd])
+        elif funct3 == "110" and funct7 == "0000000":  # or
+            Registers[rd] = [rs1_val | rs2_val]
+            print("or",Registers[rd])
+        elif funct3 == "111" and funct7 == "0000000":  # and
+            Registers[rd] = [rs1_val & rs2_val]
+            print("and",Registers[rd])
+        elif funct3 == "001" and funct7 == "0000000":  # sll
+            temp = rs2_val & 0x1F
+            Registers[rd] = [rs1_val << temp]
+            print("sll",Registers[rd])
+        elif funct3 == "101" and funct7 == "0000000":  # srl
+            temp = rs2_val & 0x1F
+            Registers[rd] = [(rs1_val & 0xFFFFFFFF) >> temp]  # logical shift
+            print("srl",Registers[rd])
+        elif funct3 == "101" and funct7 == "0100000":  # sra
+            temp = rs2_val & 0x1F
+            Registers[rd] = [rs1_val >> temp]  # arithmetic shift (Python preserves sign)
+            print("sra",Registers[rd])
+        elif funct3 == "010" and funct7 == "0000000":  # slt
+            Registers[rd] = [1 if rs1_val < rs2_val else 0]
+            print("slt",Registers[rd])
+        elif funct3 == "011" and funct7 == "0000000":  # sltu
+            Registers[rd] = [1 if (rs1_val & 0xFFFFFFFF) < (rs2_val & 0xFFFFFFFF) else 0]
+            print("sltu",Registers[rd])
 
-        # write_to_file(instruction,output_path,readable_path)
-    except (ValueError,IndexError,KeyError) as error:
-        st= f"Error processing instruction: {instruction}. Error: {error}"
-        binary_instructions.append(st)
+    except (ValueError, IndexError, KeyError) as error:
+        print(f"Error processing R-type instruction: {instruction}. Error: {error}")
     
 def I_TYPE_INSTRUCTION(instruction):#added try except
     try:
