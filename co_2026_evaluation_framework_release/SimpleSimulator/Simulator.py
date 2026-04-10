@@ -22,7 +22,7 @@ note the ADRESSES ARE AS FFOLOWS
 | 111_{00-11}               | x28-31   | t3-6     | Temporaries                          | Caller |
 '''
 
-# Maps 5-bit binary string → register name e.g. "00000" → "x0"
+# maps binary string to register 00000 to x0
 BIN_TO_REG = {format(i, '05b'): f"x{i}" for i in range(32)}
 
 Registers = {
@@ -82,6 +82,11 @@ output_path    = None
 readable_path  = None
 labels         = {}
 pc             = 0
+def bin_to_signed(val):
+    val &= 0xFFFFFFFF
+    if val & 0x80000000:
+        return val - 0x100000000
+    return val
 
 def write_to_file(data, output_file_path_name, r_path=None):
     """Write a string or list of strings to the output file."""
@@ -222,7 +227,7 @@ def R_TYPE_INSTRUCTION(instruction):
         Registers["x0"] = [0]   # x0 is always 0
 
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error R-type: {instruction}. Error: {error}")
+        print(f"error R type: {instruction}error: {error}")
 
 def I_TYPE_INSTRUCTION(instruction, current_pc=None):
     try:
@@ -234,8 +239,9 @@ def I_TYPE_INSTRUCTION(instruction, current_pc=None):
 
         rs1_val  = Registers[rs1][0]
 
-        # sign-extend 12-bit immediate
         imm = int(imm_bits, 2)
+
+        
         if imm_bits[0] == "1":
             imm -= (1 << 12)
 
@@ -255,7 +261,7 @@ def I_TYPE_INSTRUCTION(instruction, current_pc=None):
         elif opcode == "1100111" and funct3 == "000":#jalr
             if current_pc is not None:
                 Registers[rd] = [current_pc + 4]
-            target = (rs1_val + imm) & ~1     # clear LSB
+            target = (rs1_val + imm) & ~1     # clear LSB ----- '~' flips all those bits
             # print("jalr", f"target={target}",Registers[rd])
             Registers["x0"] = [0]
             return target                     
@@ -263,72 +269,80 @@ def I_TYPE_INSTRUCTION(instruction, current_pc=None):
         Registers["x0"] = [0]
 
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error I-type: {instruction}. Error: {error}")
+        print(f"Error I-type: {instruction}error: {error}")
 
 def S_TYPE_INSTRUCTION(instruction,pc):
     try:
-        rs2 =instruction[7:12]
-        rs1 =instruction[12:17]
+        rs2 =BIN_TO_REG[instruction[7:12]]
+        rs1 =BIN_TO_REG[instruction[12:17]]
         f3  =instruction[17:20]
         imm =sign_extend(int(instruction[0:7]+instruction[20:25],2),12)#join both parts of imm
+        
         if(f3=="010"):
             addr =to_u32(read_reg(rs1)+imm)
             val=read_reg(rs2)
             mem_store(addr,val)
-        else:
-            print(f"Error: Unknown S-type f3={f3}")
-        return pc + 4, False
+
+        Registers["x0"] = [0]
 
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error in S-TYPE: {instruction} → {error}")
-        return pc + 4, False
+        print(f"error in S-TYPE: {instruction}error:{error}")
 
 def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
     try:
- 
-        # inst[0]=imm[12] inst[24]=imm[11  inst[1:7]=imm[10:5] inst[20:24]=imm[4:1]
-        imm_bits = (instruction[0] +instruction[24]+instruction[1:7]+instruction[20:24]+'0')                   
+        # Reconstruct B-type immediate: imm[12]|imm[11]|imm[10:5]|imm[4:1]|0
+        # instruction[0] is bit 31 (imm[12])
+        # instruction[24] is bit 7 (imm[11])
+        # instruction[1:7] is bits 30:25 (imm[10:5])
+        # instruction[20:24] is bits 11:8 (imm[4:1])
+        imm_bits = (instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + '0')
 
-        rs1    = BIN_TO_REG[instruction[12:17]]
-        rs2    = BIN_TO_REG[instruction[7:12]]
+        rs1_idx = BIN_TO_REG[instruction[12:17]]
+        rs2_idx = BIN_TO_REG[instruction[7:12]]
         funct3 = instruction[17:20]
 
-        rs1_val = Registers[rs1][0]
-        rs2_val = Registers[rs2][0]
+        # Get values from your Registers dictionary
+        val1_raw = Registers[rs1_idx][0]
+        val2_raw = Registers[rs2_idx][0]
 
+        # Prepare signed values for signed comparisons
+        val1_signed = bin_to_signed(val1_raw)
+        val2_signed = bin_to_signed(val2_raw)
+        
+        # Prepare unsigned values (32-bit mask)
+        val1_unsigned = val1_raw & 0xFFFFFFFF
+        val2_unsigned = val2_raw & 0xFFFFFFFF
+
+        # Parse the immediate string to an integer
         imm = int(imm_bits, 2)
-        if imm_bits[0] == "1":
+        if imm_bits[0] == "1": # Sign extend 13-bit immediate
             imm -= (1 << 13)
 
         taken = False
-        if   funct3 =="000":#beq
-            taken = (rs1_val == rs2_val)
-            # print("beq", taken)
-        elif funct3 =="001":#bne
-            taken = (rs1_val != rs2_val)
-            # print("bne", taken)
-        elif funct3 =="100":#blt
-            taken = (rs1_val < rs2_val)
-            # print("blt", taken)
-        elif funct3 =="101":#bge
-            taken = (rs1_val >= rs2_val)
-            # print("bge", taken)
-        elif funct3 == "110":#bltu
-            taken = ((rs1_val & 0xFFFFFFFF) < (rs2_val & 0xFFFFFFFF))
-            # print("bltu", taken)
-        elif funct3 == "111":#bgeu
-            taken = ((rs1_val & 0xFFFFFFFF) >= (rs2_val & 0xFFFFFFFF))
-            # print("bgeu", taken)
+        if funct3 == "000":    #beq
+            taken = (val1_signed ==val2_signed)
+        elif funct3 == "001":  #bne
+            taken = (val1_signed !=val2_signed)
+        elif funct3 == "100":  #blt
+            taken = (val1_signed <val2_signed)
+        elif funct3 == "101":  #bge
+            taken = (val1_signed >=val2_signed)
+        elif funct3 == "110":  #bltu
+            taken = (val1_unsigned <val2_unsigned)
+        elif funct3 == "111":  #bgeu
+            taken = (val1_unsigned>=val2_unsigned)
 
         Registers["x0"] = [0]
+        
+        # Return the offset if branch is taken, otherwise return 4 (standard increment)
         if taken:
             return imm 
         else:
-         None  
+            return 4  # changed this from None to 4 for easier handling in PC_run it is just a random number it can be anything 
 
-    except (ValueError, IndexError, KeyError) as error:
-        print(f"Error Btype:{instruction}Error:{error}")
-        return None
+    except (ValueError,IndexError,KeyError) as error:
+        print(f"error B type:{instruction}error: {error}")
+        return 
 
 def U_TYPE_INSTRUCTION(instruction,pc):
     try:
@@ -342,30 +356,39 @@ def U_TYPE_INSTRUCTION(instruction,pc):
         elif opc == "0010111":#auipc
             r=to_s32(pc+(imm<<12))
             write_reg(rd,r)
-        return pc + 4, False
+        return pc + 4
 
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error in U-TYPE: {instruction} → {error}")
-        return pc + 4, False
+        print(f"error in U-TYPE: {instruction} → {error}")
+        return pc + 4
 
-def J_TYPE_INSTRUCTION(instruction, pc):
+def J_TYPE_INSTRUCTION(instruction, current_pc=0):
     try:
-        rd  = instruction[20:25]
-        imm = sign_extend(
-            int(instruction[0]+instruction[12:20]+instruction[11]+instruction[1:11]+"0",2),21)
-        target = (to_u32(pc+imm)&-2)
-        write_reg(rd, pc + 4)
-        return target, False
-    
+        # inst[0]=imm[20], inst[12:20]=imm[19:12], inst[11]=imm[11], inst[1:11]=imm[10:1]
+        imm_bits = (instruction[0]+instruction[12:20]+instruction[11]+instruction[1:11]+'0')        
+        rd= BIN_TO_REG[instruction[20:25]]
+        opcode= instruction[25:32]
+ 
+        imm = int(imm_bits,2)
+
+        if imm_bits[0] =="1":
+            imm -= (1<<21)
+
+        Registers[rd] = [current_pc + 4]
+        target = (current_pc + imm) & ~1
+        # print("jal", f"target={target}",Registers[rd])
+        Registers["x0"] = [0]
+        return target
+            
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error Jtype: {instruction} Error: {error}")
-        return pc + 4, False
+        print(f"Error Jtype:{instruction}error:{error}")
+        return None
 
 def virtual_halt(instruction):
-    """beq zero, zero, 0  →  opcode=1100011, funct3=000, rs1=x0, rs2=x0, imm=0"""
+    "beq zero, zero, 0  = opcode=1100011 funct3=000  rs1=x0 rs2=x0 imm=0"
     if len(instruction) < 32:
         return False
-    if not (instruction[25:32] == "1100011" and   # opcode: beq
+    if not (instruction[25:32] == "1100011"  and   # opcode: beq
             instruction[17:20] == "000"      and   # funct3
             instruction[12:17] == "00000"    and   # rs1 = zero
             instruction[7:12]  == "00000"):        # rs2 = zero
@@ -375,6 +398,7 @@ def virtual_halt(instruction):
     imm = int(imm_bits, 2)
     if imm_bits[0] == "1":
         imm -= (1 << 13)
+
     return imm == 0
 
 def PC_run():
@@ -406,20 +430,20 @@ def PC_run():
             I_TYPE_INSTRUCTION(instruction, current_pc=pc)
             pc += 4
             write_registers(pc)
-        elif opcode == "1100111":                      # jalr
+        elif opcode == "1100111":  # jalr
             target = I_TYPE_INSTRUCTION(instruction, current_pc=pc)
             pc = target if target is not None else pc + 4
             write_registers(pc)
         #stype 
         elif opcode == "0100011":
-            S_TYPE_INSTRUCTION(instruction)
+            S_TYPE_INSTRUCTION(instruction,pc)
             pc += 4
             write_registers(pc)
         #btype 
         elif opcode == "1100011":
             offset = B_TYPE_INSTRUCTION(instruction, current_pc=pc, labels=labels)
             if offset is not None:
-                pc += offset              # branch taken
+                pc += offset # branch taken
             else:
                 pc += 4
             write_registers(pc)
@@ -430,8 +454,11 @@ def PC_run():
             write_registers(pc)
         #jtype
         elif opcode == "1101111":
-            target = J_TYPE_INSTRUCTION(instruction, labels=labels, current_pc=pc)
-            pc = target if target is not None else pc + 4
+            target = J_TYPE_INSTRUCTION(instruction,current_pc=pc)
+            if target is not None:
+                pc = target  
+            else:
+                pc + 4
             write_registers(pc)
 
 def main():
@@ -446,7 +473,7 @@ def main():
     pc = 0
     for key in Registers:
         Registers[key] = [0]
-    Registers["x2"] = [STACK_TOP]   # sp = x2
+    Registers["x2"] = [STACK_TOP]  # sp = x2
     memory.clear()
 
     if len(sys.argv) < 3:
@@ -475,7 +502,7 @@ def main():
 
     virtual_halt_count = sum(1 for inst in instructions if virtual_halt(inst))
     if virtual_halt_count == 0:
-        print("Error: No virtual halt instruction found Use 'beq zero zero, 0'")
+        print("error: No virtual halt instruction found Use beq zero zero")
         return
 
     PC_run()
