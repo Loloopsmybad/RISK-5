@@ -129,9 +129,6 @@ def write_memory():
     # for l in lines:
     #     # print(l)
 
-
-
-
 # def segrigator(instruction):
 #     if   instruction[25:32] == "0110011":
 #         print("R-TYPE INSTRUCTION", instruction)
