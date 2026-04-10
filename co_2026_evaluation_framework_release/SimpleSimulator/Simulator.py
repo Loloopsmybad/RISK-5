@@ -82,6 +82,11 @@ output_path    = None
 readable_path  = None
 labels         = {}
 pc             = 0
+def bin_to_signed(val):
+    val &= 0xFFFFFFFF
+    if val & 0x80000000:
+        return val - 0x100000000
+    return val
 
 def write_to_file(data, output_file_path_name, r_path=None):
     """Write a string or list of strings to the output file."""
@@ -259,50 +264,59 @@ def S_TYPE_INSTRUCTION(instruction):
 
 def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
     try:
- 
-        # inst[0]=imm[12] inst[24]=imm[11  inst[1:7]=imm[10:5] inst[20:24]=imm[4:1]
-        imm_bits = (instruction[0] +instruction[24]+instruction[1:7]+instruction[20:24]+'0')                   
+        # Reconstruct B-type immediate: imm[12]|imm[11]|imm[10:5]|imm[4:1]|0
+        # instruction[0] is bit 31 (imm[12])
+        # instruction[24] is bit 7 (imm[11])
+        # instruction[1:7] is bits 30:25 (imm[10:5])
+        # instruction[20:24] is bits 11:8 (imm[4:1])
+        imm_bits = (instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + '0')
 
-        rs1    = BIN_TO_REG[instruction[12:17]]
-        rs2    = BIN_TO_REG[instruction[7:12]]
+        rs1_idx = BIN_TO_REG[instruction[12:17]]
+        rs2_idx = BIN_TO_REG[instruction[7:12]]
         funct3 = instruction[17:20]
 
-        rs1_val = Registers[rs1][0]
-        rs2_val = Registers[rs2][0]
+        # Get values from your Registers dictionary
+        val1_raw = Registers[rs1_idx][0]
+        val2_raw = Registers[rs2_idx][0]
 
+        # Prepare signed values for signed comparisons
+        val1_signed = bin_to_signed(val1_raw)
+        val2_signed = bin_to_signed(val2_raw)
+        
+        # Prepare unsigned values (32-bit mask)
+        val1_unsigned = val1_raw & 0xFFFFFFFF
+        val2_unsigned = val2_raw & 0xFFFFFFFF
+
+        # Parse the immediate string to an integer
         imm = int(imm_bits, 2)
-        if imm_bits[0] == "1":
+        if imm_bits[0] == "1": # Sign extend 13-bit immediate
             imm -= (1 << 13)
 
         taken = False
-        if   funct3 =="000":#beq
-            taken = (rs1_val == rs2_val)
-            # print("beq", taken)
-        elif funct3 =="001":#bne
-            taken = (rs1_val != rs2_val)
-            # print("bne", taken)
-        elif funct3 =="100":#blt
-            taken = (rs1_val < rs2_val)
-            # print("blt", taken)
-        elif funct3 =="101":#bge
-            taken = (rs1_val >= rs2_val)
-            # print("bge", taken)
-        elif funct3 == "110":#bltu
-            taken = ((rs1_val & 0xFFFFFFFF) < (rs2_val & 0xFFFFFFFF))
-            # print("bltu", taken)
-        elif funct3 == "111":#bgeu
-            taken = ((rs1_val & 0xFFFFFFFF) >= (rs2_val & 0xFFFFFFFF))
-            # print("bgeu", taken)
+        if funct3 == "000":    # beq
+            taken = (val1_signed == val2_signed)
+        elif funct3 == "001":  # bne
+            taken = (val1_signed != val2_signed)
+        elif funct3 == "100":  # blt
+            taken = (val1_signed < val2_signed)
+        elif funct3 == "101":  # bge
+            taken = (val1_signed >= val2_signed)
+        elif funct3 == "110":  # bltu
+            taken = (val1_unsigned < val2_unsigned)
+        elif funct3 == "111":  # bgeu
+            taken = (val1_unsigned >= val2_unsigned)
 
         Registers["x0"] = [0]
+        
+        # Return the offset if branch is taken, otherwise return 4 (standard increment)
         if taken:
             return imm 
         else:
-         None  
+            return 4  # Note: I changed this from None to 4 for easier handling in PC_run
 
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error Btype:{instruction}Error:{error}")
-        return None
+        print(f"Error B-type: {instruction}. Error: {error}")
+        return 
 
 def U_TYPE_INSTRUCTION(instruction, current_pc=0):
     try:
