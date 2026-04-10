@@ -227,7 +227,7 @@ def R_TYPE_INSTRUCTION(instruction):
         Registers["x0"] = [0]   # x0 is always 0
 
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error R-type: {instruction}. Error: {error}")
+        print(f"error R type: {instruction}error: {error}")
 
 def I_TYPE_INSTRUCTION(instruction, current_pc=None):
     try:
@@ -239,8 +239,9 @@ def I_TYPE_INSTRUCTION(instruction, current_pc=None):
 
         rs1_val  = Registers[rs1][0]
 
-        # sign-extend 12-bit immediate
         imm = int(imm_bits, 2)
+
+        
         if imm_bits[0] == "1":
             imm -= (1 << 12)
 
@@ -260,7 +261,7 @@ def I_TYPE_INSTRUCTION(instruction, current_pc=None):
         elif opcode == "1100111" and funct3 == "000":#jalr
             if current_pc is not None:
                 Registers[rd] = [current_pc + 4]
-            target = (rs1_val + imm) & ~1     # clear LSB
+            target = (rs1_val + imm) & ~1     # clear LSB ----- '~' flips all those bits
             # print("jalr", f"target={target}",Registers[rd])
             Registers["x0"] = [0]
             return target                     
@@ -268,7 +269,7 @@ def I_TYPE_INSTRUCTION(instruction, current_pc=None):
         Registers["x0"] = [0]
 
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error I-type: {instruction}. Error: {error}")
+        print(f"Error I-type: {instruction}error: {error}")
 
 def S_TYPE_INSTRUCTION(instruction,pc):
     try:
@@ -285,7 +286,7 @@ def S_TYPE_INSTRUCTION(instruction,pc):
         Registers["x0"] = [0]
 
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error in S-TYPE: {instruction} → {error}")
+        print(f"error in S-TYPE: {instruction}error:{error}")
 
 def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
     try:
@@ -318,18 +319,18 @@ def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
             imm -= (1 << 13)
 
         taken = False
-        if funct3 == "000":    # beq
-            taken = (val1_signed == val2_signed)
-        elif funct3 == "001":  # bne
-            taken = (val1_signed != val2_signed)
-        elif funct3 == "100":  # blt
-            taken = (val1_signed < val2_signed)
-        elif funct3 == "101":  # bge
-            taken = (val1_signed >= val2_signed)
-        elif funct3 == "110":  # bltu
-            taken = (val1_unsigned < val2_unsigned)
-        elif funct3 == "111":  # bgeu
-            taken = (val1_unsigned >= val2_unsigned)
+        if funct3 == "000":    #beq
+            taken = (val1_signed ==val2_signed)
+        elif funct3 == "001":  #bne
+            taken = (val1_signed !=val2_signed)
+        elif funct3 == "100":  #blt
+            taken = (val1_signed <val2_signed)
+        elif funct3 == "101":  #bge
+            taken = (val1_signed >=val2_signed)
+        elif funct3 == "110":  #bltu
+            taken = (val1_unsigned <val2_unsigned)
+        elif funct3 == "111":  #bgeu
+            taken = (val1_unsigned>=val2_unsigned)
 
         Registers["x0"] = [0]
         
@@ -337,10 +338,10 @@ def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
         if taken:
             return imm 
         else:
-            return 4  # Note: I changed this from None to 4 for easier handling in PC_run
+            return 4  # changed this from None to 4 for easier handling in PC_run it is just a random number it can be anything 
 
-    except (ValueError, IndexError, KeyError) as error:
-        print(f"Error B-type: {instruction}. Error: {error}")
+    except (ValueError,IndexError,KeyError) as error:
+        print(f"error B type:{instruction}error: {error}")
         return 
 
 def U_TYPE_INSTRUCTION(instruction,pc):
@@ -358,7 +359,7 @@ def U_TYPE_INSTRUCTION(instruction,pc):
         return pc + 4
 
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error in U-TYPE: {instruction} → {error}")
+        print(f"error in U-TYPE: {instruction} → {error}")
         return pc + 4
 
 def J_TYPE_INSTRUCTION(instruction, current_pc=0):
@@ -380,14 +381,14 @@ def J_TYPE_INSTRUCTION(instruction, current_pc=0):
         return target
             
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error Jtype:{instruction}Error:{error}")
+        print(f"Error Jtype:{instruction}error:{error}")
         return None
 
 def virtual_halt(instruction):
-    """beq zero, zero, 0  →  opcode=1100011, funct3=000, rs1=x0, rs2=x0, imm=0"""
+    "beq zero, zero, 0  = opcode=1100011 funct3=000  rs1=x0 rs2=x0 imm=0"
     if len(instruction) < 32:
         return False
-    if not (instruction[25:32] == "1100011" and   # opcode: beq
+    if not (instruction[25:32] == "1100011"  and   # opcode: beq
             instruction[17:20] == "000"      and   # funct3
             instruction[12:17] == "00000"    and   # rs1 = zero
             instruction[7:12]  == "00000"):        # rs2 = zero
@@ -397,6 +398,7 @@ def virtual_halt(instruction):
     imm = int(imm_bits, 2)
     if imm_bits[0] == "1":
         imm -= (1 << 13)
+
     return imm == 0
 
 def PC_run():
@@ -428,7 +430,7 @@ def PC_run():
             I_TYPE_INSTRUCTION(instruction, current_pc=pc)
             pc += 4
             write_registers(pc)
-        elif opcode == "1100111":                      # jalr
+        elif opcode == "1100111":  # jalr
             target = I_TYPE_INSTRUCTION(instruction, current_pc=pc)
             pc = target if target is not None else pc + 4
             write_registers(pc)
@@ -441,7 +443,7 @@ def PC_run():
         elif opcode == "1100011":
             offset = B_TYPE_INSTRUCTION(instruction, current_pc=pc, labels=labels)
             if offset is not None:
-                pc += offset              # branch taken
+                pc += offset # branch taken
             else:
                 pc += 4
             write_registers(pc)
@@ -471,7 +473,7 @@ def main():
     pc = 0
     for key in Registers:
         Registers[key] = [0]
-    Registers["x2"] = [STACK_TOP]   # sp = x2
+    Registers["x2"] = [STACK_TOP]  # sp = x2
     memory.clear()
 
     if len(sys.argv) < 3:
@@ -500,7 +502,7 @@ def main():
 
     virtual_halt_count = sum(1 for inst in instructions if virtual_halt(inst))
     if virtual_halt_count == 0:
-        print("Error: No virtual halt instruction found Use 'beq zero zero, 0'")
+        print("error: No virtual halt instruction found Use beq zero zero")
         return
 
     PC_run()
