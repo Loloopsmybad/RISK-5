@@ -272,21 +272,20 @@ def I_TYPE_INSTRUCTION(instruction, current_pc=None):
 
 def S_TYPE_INSTRUCTION(instruction,pc):
     try:
-        rs2 =instruction[7:12]
-        rs1 =instruction[12:17]
+        rs2 =BIN_TO_REG[instruction[7:12]]
+        rs1 =BIN_TO_REG[instruction[12:17]]
         f3  =instruction[17:20]
         imm =sign_extend(int(instruction[0:7]+instruction[20:25],2),12)#join both parts of imm
+        
         if(f3=="010"):
             addr =to_u32(read_reg(rs1)+imm)
             val=read_reg(rs2)
             mem_store(addr,val)
-        else:
-            print(f"Error: Unknown S-type f3={f3}")
-        return pc + 4, False
+
+        Registers["x0"] = [0]
 
     except (ValueError, IndexError, KeyError) as error:
         print(f"Error in S-TYPE: {instruction} → {error}")
-        return pc + 4, False
 
 def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
     try:
@@ -362,18 +361,27 @@ def U_TYPE_INSTRUCTION(instruction,pc):
         print(f"Error in U-TYPE: {instruction} → {error}")
         return pc + 4, False
 
-def J_TYPE_INSTRUCTION(instruction, pc):
+def J_TYPE_INSTRUCTION(instruction, current_pc=0):
     try:
-        rd  = instruction[20:25]
-        imm = sign_extend(
-            int(instruction[0]+instruction[12:20]+instruction[11]+instruction[1:11]+"0",2),21)
-        target = (to_u32(pc+imm)&-2)
-        write_reg(rd, pc + 4)
-        return target, False
-    
+        # inst[0]=imm[20], inst[12:20]=imm[19:12], inst[11]=imm[11], inst[1:11]=imm[10:1]
+        imm_bits = (instruction[0]+instruction[12:20]+instruction[11]+instruction[1:11]+'0')        
+        rd= BIN_TO_REG[instruction[20:25]]
+        opcode= instruction[25:32]
+ 
+        imm = int(imm_bits,2)
+        
+        if imm_bits[0] =="1":
+            imm -= (1<<21)
+
+        Registers[rd] = [current_pc + 4]
+        target = (current_pc + imm) & ~1
+        # print("jal", f"target={target}",Registers[rd])
+        Registers["x0"] = [0]
+        return target
+            
     except (ValueError, IndexError, KeyError) as error:
-        print(f"Error Jtype: {instruction} Error: {error}")
-        return pc + 4, False
+        print(f"Error Jtype:{instruction}Error:{error}")
+        return None
 
 def virtual_halt(instruction):
     """beq zero, zero, 0  →  opcode=1100011, funct3=000, rs1=x0, rs2=x0, imm=0"""
@@ -426,7 +434,7 @@ def PC_run():
             write_registers(pc)
         #stype 
         elif opcode == "0100011":
-            S_TYPE_INSTRUCTION(instruction)
+            S_TYPE_INSTRUCTION(instruction,pc)
             pc += 4
             write_registers(pc)
         #btype 
@@ -444,8 +452,11 @@ def PC_run():
             write_registers(pc)
         #jtype
         elif opcode == "1101111":
-            target = J_TYPE_INSTRUCTION(instruction, labels=labels, current_pc=pc)
-            pc = target if target is not None else pc + 4
+            target = J_TYPE_INSTRUCTION(instruction,current_pc=pc)
+            if target is not None:
+                pc = target  
+            else:
+                pc + 4
             write_registers(pc)
 
 def main():
