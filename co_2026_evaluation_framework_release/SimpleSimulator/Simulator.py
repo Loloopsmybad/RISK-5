@@ -162,7 +162,7 @@ def to_s32(v):
     return v-0x100000000 if v>=0x80000000 else v
 def sign_extend(v,bits):
     if(v>=(2**(bits-1))):
-        v-=(2**bits)
+        v= v - (2**bits)
     return v
 def bin32(v):
     return format(to_u32(v),'032b')
