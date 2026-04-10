@@ -1,11 +1,12 @@
-import re 
+import re
 import sys
 import os
+from collections import defaultdict
+
 '''
 note the ADRESSES ARE AS FFOLOWS
 
 | Address                   | Register | ABI Name | Description                          | Saver  |
-
 | 0000_0                    | x0       | zero     | Hard-wired zero                      | —      |
 | 0000_1                    | x1       | ra       | Return address                       | Caller |
 | 0001_0                    | x2       | sp       | Stack Pointer                        | Callee |
@@ -20,349 +21,461 @@ note the ADRESSES ARE AS FFOLOWS
 | 1_{0010-1011}             | x18-27   | s2-11    | Saved registers                      | Caller |
 | 111_{00-11}               | x28-31   | t3-6     | Temporaries                          | Caller |
 '''
-Registers = {#32 registers and their 2nd name
-  "zero":  "00000", "x0" :"00000",
-    "ra":  "00001", "x1" :"00001",
-    "sp":  "00010", "x2" :"00010",
-    "gp":  "00011", "x3" :"00011",
-    "tp":  "00100", "x4" :"00100",
-    "t0":  "00101", "x5" :"00101",
-    "t1":  "00110", "x6" :"00110",
-    "t2":  "00111", "x7" :"00111",
-    "s0":  "01000", "fp" :"01000", "x8": "01000",
-    "s1":  "01001", "x9" :"01001",
-    "a0":  "01010", "x10":"01010",
-    "a1":  "01011", "x11":"01011",
-    "a2":  "01100", "x12":"01100",
-    "a3":  "01101", "x13":"01101",
-    "a4":  "01110", "x14":"01110",
-    "a5":  "01111", "x15":"01111",
-    "a6":  "10000", "x16":"10000",
-    "a7":  "10001", "x17":"10001",
-    "s2":  "10010", "x18":"10010",
-    "s3":  "10011", "x19":"10011",
-    "s4":  "10100", "x20":"10100",
-    "s5":  "10101", "x21":"10101",
-    "s6":  "10110", "x22":"10110",
-    "s7":  "10111", "x23":"10111",
-    "s8":  "11000", "x24":"11000",
-    "s9":  "11001", "x25":"11001",
-    "s10": "11010", "x26":"11010",
-    "s11": "11011", "x27":"11011",
-    "t3":  "11100", "x28":"11100",
-    "t4":  "11101", "x29":"11101",
-    "t5":  "11110", "x30":"11110",
-    "t6":  "11111", "x31":"11111",
-}
-R_type_INSTRUCTIONS={
-#instruction   #opcode   #func3  #func 7
-    "add"  : ["0110011", "000", "0000000"],
-    "sub"  : ["0110011", "000", "0100000"],
-    "xor"  : ["0110011", "100", "0000000"],
-    "or"   : ["0110011", "110", "0000000"],
-    "and"  : ["0110011", "111", "0000000"],
-    "sll"  : ["0110011", "001", "0000000"],
-    "srl"  : ["0110011", "101", "0000000"],
-    "slt"  : ["0110011", "010", "0000000"],
-    "sltu" : ["0110011", "011", "0000000"]
-}
-I_type_INSTRUCTIONS={
-# instruction   #opcode   #func3   #func7 (not used in I-type)
-    "lw"    : ["0000011", "010", None],
-    "addi"  : ["0010011", "000", None],
-    "sltiu" : ["0010011", "011", None],
-    "jalr"  : ["1100111", "000", None],
-}
-S_type_INSTRUCTIONS={
-#instruction   #opcode   #func3
-    "sw"   : ["0100011", "010"],
-}
-B_type_INSTRUCTIONS={
-#instruction  #opcode  #func3
-    "beq": ["1100011","000"],
-    "bne": ["1100011","001"],
-    "blt": ["1100011","100"],
-    "bge": ["1100011","101"],
-    "bltu":["1100011","110"],
-    "bgeu":["1100011","111"]
-}
-U_type_INSTRUCTIONS={
-#instruction   #opcode
-    "lui"  : ["0110111"],
-    "auipc": ["0010111"],
 
-}
-J_type_INSTRUCTIONS={
-#instruction   #opcode
-    "jal"  : ["1101111"],
+# Maps 5-bit binary string → register name e.g. "00000" → "x0"
+BIN_TO_REG = {format(i, '05b'): f"x{i}" for i in range(32)}
+
+Registers = {
+    "x0" : [0], 
+    "x1" : [0], 
+    "x2" : [0], 
+    "x3" : [0],
+    "x4" : [0], 
+    "x5" : [0], 
+    "x6" : [0], 
+    "x7" : [0],
+    "x8" : [0], 
+    "x9" : [0], 
+    "x10": [0], 
+    "x11": [0],
+    "x12": [0], 
+    "x13": [0], 
+    "x14": [0], 
+    "x15": [0],
+    "x16": [0], 
+    "x17": [0], 
+    "x18": [0], 
+    "x19": [0],
+    "x20": [0], 
+    "x21": [0], 
+    "x22": [0], 
+    "x23": [0],
+    "x24": [0], 
+    "x25": [0], 
+    "x26": [0], 
+    "x27": [0],
+    "x28": [0], 
+    "x29": [0], 
+    "x30": [0], 
+    "x31": [0],
 }
 
+# Data memory: 32 locations x 32-bit, base address 0x00010000
+DATA_MEM_BASE = 0x00010000
+memory = defaultdict(int)
 
-refined_instructions=[]
-binary_instructions=[]
-def write_to_file(output_file_path_name, readable_path=None):
+# Stack memory: base 0x00000100, SP initialised to 0x0000017C
+STACK_BASE   = 0x00000100
+STACK_TOP    = 0x0000017C
+Registers["x2"] = [STACK_TOP]   # sp = x2
+
+# PLEASE REFER THIS INDEX ENCODING
+# [0:7]   = funct7   (bits 31:25)
+# [7:12]  = rs2      (bits 24:20)
+# [12:17] = rs1      (bits 19:15)
+# [17:20] = funct3   (bits 14:12)
+# [20:25] = rd       (bits 11:7)
+# [25:32] = opcode   (bits 6:0)
+
+instructions   = []
+output_path    = None
+readable_path  = None
+labels         = {}
+pc             = 0
+
+def write_to_file(data, output_file_path_name, r_path=None):
+    """Write a string or list of strings to the output file."""
     folder = os.path.dirname(output_file_path_name)
     if folder:
         os.makedirs(folder, exist_ok=True)
-    with open(output_file_path_name, 'w') as file:
-        for instruction in binary_instructions:
-            file.write(instruction + '\n')
-    print(f"Binary instructions written to '{output_file_path_name}'")
-    if readable_path:
-        folder = os.path.dirname(readable_path)
+    with open(output_file_path_name, 'a') as f:
+        if isinstance(data, list):
+            for line in data:
+                f.write(str(line) + '\n')
+        else:
+            f.write(str(data) + '\n')
+    if r_path:
+        folder = os.path.dirname(r_path)
         if folder:
             os.makedirs(folder, exist_ok=True)
-        with open(readable_path, 'w') as file:
-            for instruction in binary_instructions:
-                file.write(instruction + '\n')
-        print(f"Readable output written to '{readable_path}'")
-    
-    
-def pre_process(subpart):#preprocess a sub_instruction
-    spaces=[]
-    for i in range(len(subpart)):
-        if subpart[i].strip() == '':
-                spaces.append(i)
-            # print(spaces)
-    spaces.reverse()
-    for i in range(len(spaces)):#remove zeroes from the sub_instruction
-        del subpart[spaces[i]]
+        with open(r_path, 'a') as f:
+            if isinstance(data, list):
+                for line in data:
+                    f.write(str(line) + '\n')
+            else:
+                f.write(str(data) + '\n')
 
-def convert_binary(n, bits):
-    n = int(n,0)
-    if n < -(2**(bits-1)) or n > (2**(bits-1) - 1):
-        raise ValueError(f"Value {n} cannot be represented in {bits} bits.")
-    if n < 0:
-        n = 2**bits + n  
-    binary = ""
-    while n > 0:
-        binary += str(n % 2)
-        n = n // 2
-    if binary == "":
-        binary = "0"
-    binary = binary[::-1]
-    zeros = bits - len(binary)
-    binary = "0"*zeros + binary
-    return binary
+def write_registers(current_pc):
+    pc_bin  = "0b" + bin(current_pc)[2:].zfill(32)
+    reg_bin = " ".join("0b" + bin(Registers[f"x{i}"][0] & 0xFFFFFFFF)[2:].zfill(32)
+                       for i in range(32))
+    line = f"{pc_bin} {reg_bin}"
+    if output_path:
+        write_to_file(line, output_path)
+    # print(line)
 
-def collect_labels(refined_instructions,labels):
-    pc=0
-    for inst in refined_instructions:
-        if inst[0].endswith(":"):
-            label=inst[0][:-1]#remove colon
-            labels[label]=pc
-            if len(inst)>1:
-                pc+=4
-        else:
-            pc+=4
+def write_memory():
+    """
+    Print memory after virtual halt:
+    Address in hex:32-bit binary data
+    """
+    lines = []
+    for i in range(32):
+        addr = DATA_MEM_BASE + i * 4
+        val  = memory.get(addr, 0)
+        lines.append(f"0x{addr:08X}:0b{bin(val & 0xFFFFFFFF)[2:].zfill(32)}")
+    if output_path:
+        write_to_file(lines, output_path)
+    # for l in lines:
+    #     # print(l)
 
-def R_TYPE_INSTRUCTION(instruction):#added try except
+
+
+
+# def segrigator(instruction):
+#     if   instruction[25:32] == "0110011":
+#         print("R-TYPE INSTRUCTION", instruction)
+#         R_TYPE_INSTRUCTION(instruction)
+#     elif instruction[25:32] in ["0000011", "0010011", "1100111"]:
+#         print("I-TYPE INSTRUCTION", instruction)
+#         I_TYPE_INSTRUCTION(instruction)
+#     elif instruction[25:32] == "0100011":
+#         print("S-TYPE INSTRUCTION", instruction)
+#         S_TYPE_INSTRUCTION(instruction)
+#     elif instruction[25:32] == "1100011":
+#         print("B-TYPE INSTRUCTION", instruction)
+#         B_TYPE_INSTRUCTION(instruction, current_pc=pc, labels=labels)
+#     elif instruction[25:32] in ["0110111", "0010111"]:
+#         print("U-TYPE INSTRUCTION", instruction)
+#         U_TYPE_INSTRUCTION(instruction)
+#     elif instruction[25:32] == "1101111":
+#         print("J-TYPE INSTRUCTION", instruction)
+#         J_TYPE_INSTRUCTION(instruction, labels=labels, current_pc=pc)
+
+def R_TYPE_INSTRUCTION(instruction):
     try:
-        binary_instruction=""
+        funct7  = instruction[0:7]
+        rs2     = BIN_TO_REG[instruction[7:12]]
+        rs1     = BIN_TO_REG[instruction[12:17]]
+        funct3  = instruction[17:20]
+        rd      = BIN_TO_REG[instruction[20:25]]
 
-        binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][2])#func7
-        binary_instruction=binary_instruction+(Registers[instruction[3]])#rs2
-        binary_instruction=binary_instruction+(Registers[instruction[2]])#rs1
-        binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][1])#func3
-        binary_instruction=binary_instruction+(Registers[instruction[1]])#rd
-        binary_instruction=binary_instruction+(R_type_INSTRUCTIONS[instruction[0]][0])#opcode
-        print(binary_instruction,"R TYPE")
-        binary_instructions.append(binary_instruction)
-    except (ValueError,IndexError,KeyError) as error:
-        st= f"Error processing instruction: {instruction}. Error: {error}"
-        binary_instructions.append(st)
-    
-def I_TYPE_INSTRUCTION(instruction):#added try except
+        rs1_val = Registers[rs1][0]
+        rs2_val = Registers[rs2][0]
+
+        if   funct3 == "000" and funct7 == "0000000":  # add
+            Registers[rd] = [rs1_val + rs2_val]
+            # print("add", Registers[rd])
+        elif funct3 == "000" and funct7 == "0100000":  # sub
+            Registers[rd] = [rs1_val - rs2_val]
+            # print("sub", Registers[rd])
+        elif funct3 == "100" and funct7 == "0000000":  # xor
+            Registers[rd] = [rs1_val ^ rs2_val]
+            # print("xor", Registers[rd])
+        elif funct3 == "110" and funct7 == "0000000":  # or
+            Registers[rd] = [rs1_val | rs2_val]
+            # print("or", Registers[rd])
+        elif funct3 == "111" and funct7 == "0000000":  # and
+            Registers[rd] = [rs1_val & rs2_val]
+            # print("and", Registers[rd])
+        elif funct3 == "001" and funct7 == "0000000":  # sll
+            shamt = rs2_val & 0x1F
+            Registers[rd] = [rs1_val << shamt]
+            # print("sll", Registers[rd])
+        elif funct3 == "101" and funct7 == "0000000":  # srl
+            shamt = rs2_val & 0x1F
+            Registers[rd] = [(rs1_val & 0xFFFFFFFF) >> shamt]
+            # print("srl", Registers[rd])
+        elif funct3 == "101" and funct7 == "0100000":  # sra
+            shamt = rs2_val & 0x1F
+            Registers[rd] = [rs1_val >> shamt]
+            # print("sra", Registers[rd])
+        elif funct3 == "010" and funct7 == "0000000":  # slt
+            Registers[rd] = [1 if rs1_val < rs2_val else 0]
+            # print("slt", Registers[rd])
+        elif funct3 == "011" and funct7 == "0000000":  # sltu
+            Registers[rd] = [1 if (rs1_val & 0xFFFFFFFF) < (rs2_val & 0xFFFFFFFF) else 0]
+            # print("sltu", Registers[rd])
+
+        Registers["x0"] = [0]   # x0 is always 0
+
+    except (ValueError, IndexError, KeyError) as error:
+        print(f"Error R-type: {instruction}. Error: {error}")
+
+def I_TYPE_INSTRUCTION(instruction, current_pc=None):
     try:
+        imm_bits = instruction[0:12]          # bits [31:20]
+        rs1      = BIN_TO_REG[instruction[12:17]]
+        funct3   = instruction[17:20]
+        rd       = BIN_TO_REG[instruction[20:25]]
+        opcode   = instruction[25:32]
 
-        short = instruction[0]
-        opcode = I_type_INSTRUCTIONS[short][0]
-        func3  = I_type_INSTRUCTIONS[short][1]
-        if short == "lw":
-            rd  = Registers[instruction[1]]
-            imm = convert_binary(instruction[2], 12)
-            rs1 = Registers[instruction[3]]
-        else:
-            rd  = Registers[instruction[1]]
-            rs1 = Registers[instruction[2]]
-            imm = convert_binary(instruction[3], 12)
-        inst = imm + rs1 + func3 + rd + opcode
-        print(inst,"I TYPE")
-        binary_instructions.append(inst)
-    except (ValueError,IndexError,KeyError) as error:
-        st= f"Error processing instruction: {instruction}. Error: {error}"
-        binary_instructions.append(st)
+        rs1_val  = Registers[rs1][0]
 
-def S_TYPE_INSTRUCTION(instruction):# added try except
+        # sign-extend 12-bit immediate
+        imm = int(imm_bits, 2)
+        if imm_bits[0] == "1":
+            imm -= (1 << 12)
+
+        if  opcode == "0000011" and funct3 == "010":# lw
+            address = rs1_val + imm
+            Registers[rd] = [memory[address]]
+            # print("lw",Registers[rd])
+
+        elif opcode == "0010011" and funct3 == "000":#addi
+            Registers[rd] = [rs1_val + imm]
+            # print("addi",Registers[rd])
+
+        elif opcode == "0010011" and funct3 == "011":#sltiu
+            Registers[rd] = [1 if (rs1_val & 0xFFFFFFFF) < (imm & 0xFFFFFFFF) else 0]
+            # print("sltiu",Registers[rd])
+
+        elif opcode == "1100111" and funct3 == "000":#jalr
+            if current_pc is not None:
+                Registers[rd] = [current_pc + 4]
+            target = (rs1_val + imm) & ~1     # clear LSB
+            # print("jalr", f"target={target}",Registers[rd])
+            Registers["x0"] = [0]
+            return target                     
+
+        Registers["x0"] = [0]
+
+    except (ValueError, IndexError, KeyError) as error:
+        print(f"Error I-type: {instruction}. Error: {error}")
+
+def S_TYPE_INSTRUCTION(instruction):
     try:
-        subpart= instruction #break the instruction
-        pre_process(subpart)
+        # immediate split: [31:25]=imm[11:5], [11:7]=imm[4:0]
+        imm_bits = instruction[0:7] + instruction[20:25]   #imm[11:5] + imm[4:0]
+        rs2      = BIN_TO_REG[instruction[7:12]]
+        rs1      = BIN_TO_REG[instruction[12:17]]
+        funct3   = instruction[17:20]
 
-        opcode=S_type_INSTRUCTIONS[subpart[0]][0]
-        func3=S_type_INSTRUCTIONS[subpart[0]][1]
-        rs2= Registers[subpart[1]]
-        rs1= Registers[subpart[3]]
-        imm12bits= convert_binary(subpart[2],12)
+        rs1_val  = Registers[rs1][0]
+        rs2_val  = Registers[rs2][0]
 
-        immstart= imm12bits[0:7] #imm[11:5]
-        immend= imm12bits[7:12] #imm[4:0]
+        imm = int(imm_bits, 2)
+        if imm_bits[0] == "1":
+            imm -= (1 << 12)
 
-        binary_s_instruction=immstart+rs2+rs1+func3+immend+opcode
-        print(binary_s_instruction,"S TYPE")
-    
-        binary_instructions.append(binary_s_instruction)
-    except (ValueError,IndexError,KeyError) as error:
-        st= f"Error processing instruction: {instruction}. Error: {error}"
-        binary_instructions.append(st)
+        if funct3 == "010": #sw
+            address = rs1_val + imm
+            memory[address] = rs2_val & 0xFFFFFFFF
+            # print("sw", f"mem[{address}] = {memory[address]}")
 
-def B_TYPE_INSTRUCTION(instruction,current_pc,labels):# added try except
+        Registers["x0"] = [0]
+
+    except (ValueError, IndexError, KeyError) as error:
+        print(f"Error S-type: {instruction}. Error: {error}")
+
+def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
     try:
-        subpart=instruction
+ 
+        # inst[0]=imm[12] inst[24]=imm[11  inst[1:7]=imm[10:5] inst[20:24]=imm[4:1]
+        imm_bits = (instruction[0] +instruction[24]+instruction[1:7]+instruction[20:24]+'0')                   
 
-        opcode=B_type_INSTRUCTIONS[subpart[0]][0]
-        func3=B_type_INSTRUCTIONS[subpart[0]][1]
-        rs1=Registers[subpart[1]]
-        rs2=Registers[subpart[2]]
+        rs1    = BIN_TO_REG[instruction[12:17]]
+        rs2    = BIN_TO_REG[instruction[7:12]]
+        funct3 = instruction[17:20]
 
-        if subpart[3] in labels:
-            offset= labels[subpart[3]]-current_pc
-        else:
-            offset=int(subpart[3],0)
-        imm13bit = convert_binary(str(offset),13)	
+        rs1_val = Registers[rs1][0]
+        rs2_val = Registers[rs2][0]
 
-        signbit=imm13bit[0]
-        lastbit=imm13bit[1]
-        mid1=imm13bit[2:8]
-        mid2=imm13bit[8:12]
-        
-        binary_b_instruction=signbit+mid1+rs2+rs1+func3+mid2+lastbit+opcode
-        print(binary_b_instruction, "B TYPE")
-        
-        binary_instructions.append(binary_b_instruction)
-    except (ValueError,IndexError,KeyError) as error:
-        st= f"Error processing instruction: {instruction}. Error: {error}"
-        binary_instructions.append(st)
+        imm = int(imm_bits, 2)
+        if imm_bits[0] == "1":
+            imm -= (1 << 13)
 
-def U_TYPE_INSTRUCTION(instruction):# added try except
+        taken = False
+        if   funct3 == "000":#beq
+            taken = (rs1_val == rs2_val)
+            # print("beq", taken)
+        elif funct3 == "001":#bne
+            taken = (rs1_val != rs2_val)
+            # print("bne", taken)
+        elif funct3 == "100":#blt
+            taken = (rs1_val < rs2_val)
+            # print("blt", taken)
+        elif funct3 == "101":#bge
+            taken = (rs1_val >= rs2_val)
+            # print("bge", taken)
+        elif funct3 == "110":#bltu
+            taken = ((rs1_val & 0xFFFFFFFF) < (rs2_val & 0xFFFFFFFF))
+            # print("bltu", taken)
+        elif funct3 == "111":#bgeu
+            taken = ((rs1_val & 0xFFFFFFFF) >= (rs2_val & 0xFFFFFFFF))
+            # print("bgeu", taken)
+
+        Registers["x0"] = [0]
+        return imm if taken else None     # None → fall-through (PC+4)
+
+    except (ValueError, IndexError, KeyError) as error:
+        print(f"Error Btype:{instruction}Error:{error}")
+        return None
+
+def U_TYPE_INSTRUCTION(instruction, current_pc=0):
     try:
-    
-        subpart= instruction #break the instruction
-        pre_process(subpart)
+        imm_bits = instruction[0:20]          # bits [31:12]
+        rd       = BIN_TO_REG[instruction[20:25]]
+        opcode   = instruction[25:32]
 
-        opcode=U_type_INSTRUCTIONS[subpart[0]][0] #find the value of opcode from dictionary
-        rd= Registers[subpart[1]]
-        imm20bit= convert_binary(subpart[2],20) #convert it into 20 bits
+        # upper 20 bits shifted to [31:12], lower 12 bits = 0
+        imm = int(imm_bits, 2) << 12
+        # sign extend 32-bit
+        if imm_bits[0] == "1":
+            imm -= (1 << 32)
 
-        binary_u_instruction= imm20bit+rd+opcode
-        print(binary_u_instruction, "U TYPE")
-        binary_instructions.append(binary_u_instruction)
-    except (ValueError,IndexError,KeyError) as error:
-        st= f"Error processing instruction: {instruction}. Error: {error}"
-        binary_instructions.append(st)
+        if   opcode == "0110111":  #lui
+            Registers[rd] = [imm]
+            # print("lui", Registers[rd])
+        elif opcode == "0010111":  #auipc
+            Registers[rd] = [current_pc + imm]
+            # print("auipc", Registers[rd])
 
-def J_TYPE_INSTRUCTION(instruction,labels,current_pc): # added try except
+        Registers["x0"] = [0]
+
+    except (ValueError, IndexError, KeyError) as error:
+        print(f"Error U-type: {instruction}. Error: {error}")
+
+def J_TYPE_INSTRUCTION(instruction, labels={}, current_pc=0):
     try:
-        subpart= instruction #break the instruction
-        pre_process(subpart)
-    
-        opcode= J_type_INSTRUCTIONS[subpart[0]][0]
-        rd=Registers[subpart[1]]
+        # inst[0]=imm[20], inst[12:20]=imm[19:12], inst[11]=imm[11], inst[1:11]=imm[10:1]
+        imm_bits = (instruction[0]+instruction[12:20]+instruction[11]+instruction[1:11]+'0')        
+        rd= BIN_TO_REG[instruction[20:25]]
+        opcode= instruction[25:32]
+ 
+        imm = int(imm_bits,2)
+        if imm_bits[0] =="1":
+            imm -= (1<<21)
 
-        if subpart[2] in labels:
-            offset= labels[subpart[2]]-current_pc # takes relative adress of the label
-        else:
-            offset=int(subpart[2],0)
-        imm21bit=convert_binary(str(offset),21)
-
-        signbit= imm21bit[0]#imm[20] represents sign of imm[19] which is also bit 31
-        target= imm21bit[1:9]#imm[19:12]
-        next=imm21bit[9]#imm[11]
-        source= imm21bit[10:20]#imm[10:1]
-
-        binary_j_instruction= signbit+source+next+target+rd+opcode
-        print(binary_j_instruction, "J TYPE")
-        binary_instructions.append(binary_j_instruction)
-    except (ValueError,IndexError,KeyError) as error:
-        st= f"Error processing instruction: {instruction}. Error: {error}"
-        binary_instructions.append(st)
+        if opcode == "1101111":  # jal
+            Registers[rd] = [current_pc + 4]
+            target = (current_pc + imm) & ~1
+            # print("jal", f"target={target}",Registers[rd])
+            Registers["x0"] = [0]
+            return target
+            
+    except (ValueError, IndexError, KeyError) as error:
+        print(f"Error Jtype:{instruction}Error:{error}")
+        return None
 
 def virtual_halt(instruction):
-    if len(instruction)<4:
-        return 0
-    if(instruction[0]=="beq" and instruction[1]=="zero" and instruction[2]=="zero" and instruction[3]=="0"):
-        return 1
-    return 0
-  
+    """beq zero, zero, 0  →  opcode=1100011, funct3=000, rs1=x0, rs2=x0, imm=0"""
+    if len(instruction) < 32:
+        return False
+    if not (instruction[25:32] == "1100011" and   # opcode: beq
+            instruction[17:20] == "000"      and   # funct3
+            instruction[12:17] == "00000"    and   # rs1 = zero
+            instruction[7:12]  == "00000"):        # rs2 = zero
+        return False
+    # Also verify the immediate offset is 0 (not just any beq x0,x0,offset)
+    imm_bits = instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + '0'
+    imm = int(imm_bits, 2)
+    if imm_bits[0] == "1":
+        imm -= (1 << 13)
+    return imm == 0
+
+def PC_run():
+    global pc
+    pc = 0
+    # Clear output files before writing (avoid stale append from previous run)
+    if output_path and os.path.exists(output_path):
+        os.remove(output_path)
+    if readable_path and os.path.exists(readable_path):
+        os.remove(readable_path)
+
+    while pc // 4 < len(instructions):
+        instruction = instructions[pc // 4]
+        opcode = instruction[25:32]
+
+        #virtual halt 
+        if virtual_halt(instruction):
+            print("VIRTUAL HALT — stopping execution")
+            write_registers(pc)
+            write_memory()
+            return
+        #R type 
+        if opcode == "0110011":
+            R_TYPE_INSTRUCTION(instruction)
+            pc += 4
+            write_registers(pc)
+        #Itype 
+        elif opcode in ["0000011", "0010011"]:
+            I_TYPE_INSTRUCTION(instruction, current_pc=pc)
+            pc += 4
+            write_registers(pc)
+        elif opcode == "1100111":                      # jalr
+            target = I_TYPE_INSTRUCTION(instruction, current_pc=pc)
+            pc = target if target is not None else pc + 4
+            write_registers(pc)
+        #stype 
+        elif opcode == "0100011":
+            S_TYPE_INSTRUCTION(instruction)
+            pc += 4
+            write_registers(pc)
+        #btype 
+        elif opcode == "1100011":
+            offset = B_TYPE_INSTRUCTION(instruction, current_pc=pc, labels=labels)
+            if offset is not None:
+                pc += offset              # branch taken
+            else:
+                pc += 4
+            write_registers(pc)
+        #utype 
+        elif opcode in ["0110111", "0010111"]:
+            U_TYPE_INSTRUCTION(instruction, current_pc=pc)
+            pc += 4
+            write_registers(pc)
+        #jtype
+        elif opcode == "1101111":
+            target = J_TYPE_INSTRUCTION(instruction, labels=labels, current_pc=pc)
+            pc = target if target is not None else pc + 4
+            write_registers(pc)
+
 def main():
-    # x = input("file path ? ")
+    global output_path
+    global readable_path
+    global labels
+    global instructions
+    global pc
+
+    # Reset all global state for clean run
+    instructions.clear()
+    pc = 0
+    for key in Registers:
+        Registers[key] = [0]
+    Registers["x2"] = [STACK_TOP]   # sp = x2
+    memory.clear()
+
     if len(sys.argv) < 3:
-        print("error please provide this format :   python3 Assembler.py <input_assembly_path> <output_machine_code_path> [output_readable_path] ")
+        print("error please provide this format : python3 Simulator.py <input_machine_code_path> <output_trace_path> [output_readable_path]")
         return
-    x = sys.argv[1]
+
+    input_path   = sys.argv[1]
+    output_path  = sys.argv[2]
+    readable_path = sys.argv[3] if len(sys.argv) > 3 else None
+    # input_path   = 'lol.txt'
+    # output_path  = 'lol1.txt'
+    # readable_path = input("readable path?")
     try:
-        with open(x, 'r') as file:
+        with open(input_path, 'r') as file:
             for line in file:
-                if line.strip() != '':
-                    line=line.replace("("," ")
-                    line=line.replace(")"," ")
-                    line=line.replace(","," ")
-                    line=line.strip().split(" ")
-                    # print(line)
-                    pre_process(line)
-                    # print(line)
-                    refined_instructions.append(line)
-            print(refined_instructions,len(refined_instructions))
+                line = line.strip()
+                if line:
+                    instructions.append(line)
+        # print("-->",instructions,len(instructions))
     except FileNotFoundError:
-        print("File not found.")
-        exit()
+        print("file not found")
         return
-    labels={}
-    collect_labels(refined_instructions, labels)
-    pc_list=[]
-    pc=0
-    virtual_halt_count=0
 
-    for i in range(len(refined_instructions)):                
-        if refined_instructions[i][0].endswith(":") and len(refined_instructions[i]) == 1:  #fix for labels without instructions on the same line
-            continue                                          
-        inst = refined_instructions[i]                        
-        if inst[0].endswith(":") :
-            actual_inst = inst[1:] 
-        else :
-            actual_inst = inst  # line 158
-        op = actual_inst[0]                              
+    # for i in instructions:
+    #     segrigator(i)
 
-        if op in R_type_INSTRUCTIONS:                         
-            R_TYPE_INSTRUCTION(actual_inst)                   
-        elif op in I_type_INSTRUCTIONS:                       
-            I_TYPE_INSTRUCTION(actual_inst)                   
-        elif op in S_type_INSTRUCTIONS:                       
-            S_TYPE_INSTRUCTION(actual_inst)                   
-        elif op in B_type_INSTRUCTIONS:                       
-            B_TYPE_INSTRUCTION(actual_inst, pc, labels)       
-        elif op in U_type_INSTRUCTIONS:                       
-            U_TYPE_INSTRUCTION(actual_inst)                   
-        elif op in J_type_INSTRUCTIONS:                    
-            J_TYPE_INSTRUCTION(actual_inst, labels, pc)
-        else:
-            st= f"ERROR: Unknown instruction {op} at line {i+1}"
-            binary_instructions.append(st)    
-        pc_list.append(pc)                                    
-        pc+=4
-        if virtual_halt(actual_inst):
-            virtual_halt_count+=1
+    virtual_halt_count = sum(1 for inst in instructions if virtual_halt(inst))
+    if virtual_halt_count == 0:
+        print("Error: No virtual halt instruction found Use 'beq zero zero, 0'")
+        return
 
-    if virtual_halt_count ==0:
-        st=f"Error: No virtual halt instruction found.Use'beq zero, zero, 0'"
-        binary_instructions.append(st)
+    PC_run()
 
 
 main()
-output_path = sys.argv[2]
-if len(sys.argv) > 3:
-    readable_path = sys.argv[3]
-else:
-    readable_path=None
-
-
-write_to_file(output_path, readable_path)

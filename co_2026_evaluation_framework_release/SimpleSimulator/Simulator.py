@@ -1,6 +1,7 @@
 import re
 import sys
 import os
+from collections import defaultdict
 
 '''
 note the ADRESSES ARE AS FFOLOWS
@@ -61,7 +62,7 @@ Registers = {
 
 # Data memory: 32 locations x 32-bit, base address 0x00010000
 DATA_MEM_BASE = 0x00010000
-memory = {DATA_MEM_BASE + i * 4: 0 for i in range(32)}
+memory = defaultdict(int)
 
 # Stack memory: base 0x00000100, SP initialised to 0x0000017C
 STACK_BASE   = 0x00000100
@@ -100,18 +101,18 @@ def write_to_file(data, output_file_path_name, r_path=None):
         with open(r_path, 'a') as f:
             if isinstance(data, list):
                 for line in data:
-                    f.write(str(line) + '\n')
+                    f.write(str(line) +'\n')
             else:
-                f.write(str(data) + '\n')
+                f.write(str(data)+'\n')
 
 def write_registers(current_pc):
-    pc_bin  = bin(current_pc)[2:].zfill(32)
-    reg_bin = " ".join(bin(Registers[f"x{i}"][0] & 0xFFFFFFFF)[2:].zfill(32)
+    pc_bin  = "0b" + bin(current_pc)[2:].zfill(32)
+    reg_bin = " ".join("0b" + bin(Registers[f"x{i}"][0] & 0xFFFFFFFF)[2:].zfill(32)
                        for i in range(32))
     line = f"{pc_bin} {reg_bin}"
     if output_path:
         write_to_file(line, output_path)
-    print(line)
+    # print(line)
 
 def write_memory():
     """
@@ -122,11 +123,11 @@ def write_memory():
     for i in range(32):
         addr = DATA_MEM_BASE + i * 4
         val  = memory.get(addr, 0)
-        lines.append(f"0x{addr:08X}:{bin(val & 0xFFFFFFFF)[2:].zfill(32)}")
+        lines.append(f"0x{addr:08X}:0b{bin(val & 0xFFFFFFFF)[2:].zfill(32)}")
     if output_path:
         write_to_file(lines, output_path)
-    for l in lines:
-        print(l)
+    # for l in lines:
+    #     # print(l)
 
 
 
@@ -164,37 +165,37 @@ def R_TYPE_INSTRUCTION(instruction):
 
         if   funct3 == "000" and funct7 == "0000000":  # add
             Registers[rd] = [rs1_val + rs2_val]
-            print("add", Registers[rd])
+            # print("add", Registers[rd])
         elif funct3 == "000" and funct7 == "0100000":  # sub
             Registers[rd] = [rs1_val - rs2_val]
-            print("sub", Registers[rd])
+            # print("sub", Registers[rd])
         elif funct3 == "100" and funct7 == "0000000":  # xor
             Registers[rd] = [rs1_val ^ rs2_val]
-            print("xor", Registers[rd])
+            # print("xor", Registers[rd])
         elif funct3 == "110" and funct7 == "0000000":  # or
             Registers[rd] = [rs1_val | rs2_val]
-            print("or", Registers[rd])
+            # print("or", Registers[rd])
         elif funct3 == "111" and funct7 == "0000000":  # and
             Registers[rd] = [rs1_val & rs2_val]
-            print("and", Registers[rd])
+            # print("and", Registers[rd])
         elif funct3 == "001" and funct7 == "0000000":  # sll
             shamt = rs2_val & 0x1F
             Registers[rd] = [rs1_val << shamt]
-            print("sll", Registers[rd])
+            # print("sll", Registers[rd])
         elif funct3 == "101" and funct7 == "0000000":  # srl
             shamt = rs2_val & 0x1F
             Registers[rd] = [(rs1_val & 0xFFFFFFFF) >> shamt]
-            print("srl", Registers[rd])
+            # print("srl", Registers[rd])
         elif funct3 == "101" and funct7 == "0100000":  # sra
             shamt = rs2_val & 0x1F
             Registers[rd] = [rs1_val >> shamt]
-            print("sra", Registers[rd])
+            # print("sra", Registers[rd])
         elif funct3 == "010" and funct7 == "0000000":  # slt
             Registers[rd] = [1 if rs1_val < rs2_val else 0]
-            print("slt", Registers[rd])
+            # print("slt", Registers[rd])
         elif funct3 == "011" and funct7 == "0000000":  # sltu
             Registers[rd] = [1 if (rs1_val & 0xFFFFFFFF) < (rs2_val & 0xFFFFFFFF) else 0]
-            print("sltu", Registers[rd])
+            # print("sltu", Registers[rd])
 
         Registers["x0"] = [0]   # x0 is always 0
 
@@ -218,22 +219,22 @@ def I_TYPE_INSTRUCTION(instruction, current_pc=None):
 
         if  opcode == "0000011" and funct3 == "010":# lw
             address = rs1_val + imm
-            Registers[rd] = [memory.get(address, 0)]
-            print("lw",Registers[rd])
+            Registers[rd] = [memory[address]]
+            # print("lw",Registers[rd])
 
         elif opcode == "0010011" and funct3 == "000":#addi
             Registers[rd] = [rs1_val + imm]
-            print("addi",Registers[rd])
+            # print("addi",Registers[rd])
 
         elif opcode == "0010011" and funct3 == "011":#sltiu
             Registers[rd] = [1 if (rs1_val & 0xFFFFFFFF) < (imm & 0xFFFFFFFF) else 0]
-            print("sltiu",Registers[rd])
+            # print("sltiu",Registers[rd])
 
         elif opcode == "1100111" and funct3 == "000":#jalr
             if current_pc is not None:
                 Registers[rd] = [current_pc + 4]
             target = (rs1_val + imm) & ~1     # clear LSB
-            print("jalr", f"target={target}",Registers[rd])
+            # print("jalr", f"target={target}",Registers[rd])
             Registers["x0"] = [0]
             return target                     
 
@@ -253,15 +254,7 @@ def S_TYPE_INSTRUCTION(instruction):
         rs1_val  = Registers[rs1][0]
         rs2_val  = Registers[rs2][0]
 
-        imm = int(imm_bits, 2)
-        if imm_bits[0] == "1":
-            imm -= (1 << 12)
-
-        if funct3 == "010": #sw
-            address = rs1_val + imm
-            memory[address] = rs2_val & 0xFFFFFFFF
-            print("sw", f"mem[{address}] = {memory[address]}")
-
+            
         Registers["x0"] = [0]
 
     except (ValueError, IndexError, KeyError) as error:
@@ -285,27 +278,30 @@ def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
             imm -= (1 << 13)
 
         taken = False
-        if   funct3 == "000":#beq
+        if   funct3 =="000":#beq
             taken = (rs1_val == rs2_val)
-            print("beq", taken)
-        elif funct3 == "001":#bne
+            # print("beq", taken)
+        elif funct3 =="001":#bne
             taken = (rs1_val != rs2_val)
-            print("bne", taken)
-        elif funct3 == "100":#blt
+            # print("bne", taken)
+        elif funct3 =="100":#blt
             taken = (rs1_val < rs2_val)
-            print("blt", taken)
-        elif funct3 == "101":#bge
+            # print("blt", taken)
+        elif funct3 =="101":#bge
             taken = (rs1_val >= rs2_val)
-            print("bge", taken)
+            # print("bge", taken)
         elif funct3 == "110":#bltu
             taken = ((rs1_val & 0xFFFFFFFF) < (rs2_val & 0xFFFFFFFF))
-            print("bltu", taken)
+            # print("bltu", taken)
         elif funct3 == "111":#bgeu
             taken = ((rs1_val & 0xFFFFFFFF) >= (rs2_val & 0xFFFFFFFF))
-            print("bgeu", taken)
+            # print("bgeu", taken)
 
         Registers["x0"] = [0]
-        return imm if taken else None     # None → fall-through (PC+4)
+        if taken:
+            return imm 
+        else:
+         None  
 
     except (ValueError, IndexError, KeyError) as error:
         print(f"Error Btype:{instruction}Error:{error}")
@@ -317,18 +313,12 @@ def U_TYPE_INSTRUCTION(instruction, current_pc=0):
         rd       = BIN_TO_REG[instruction[20:25]]
         opcode   = instruction[25:32]
 
-        # upper 20 bits shifted to [31:12], lower 12 bits = 0
-        imm = int(imm_bits, 2) << 12
-        # sign extend 32-bit
-        if imm_bits[0] == "1":
-            imm -= (1 << 32)
-
         if   opcode == "0110111":  #lui
             Registers[rd] = [imm]
-            print("lui", Registers[rd])
+            # print("lui", Registers[rd])
         elif opcode == "0010111":  #auipc
-            Registers[rd] = [current_pc + imm]
-            print("auipc", Registers[rd])
+            
+            # print("auipc", Registers[rd])
 
         Registers["x0"] = [0]
 
@@ -337,37 +327,36 @@ def U_TYPE_INSTRUCTION(instruction, current_pc=0):
 
 def J_TYPE_INSTRUCTION(instruction, labels={}, current_pc=0):
     try:
-        # inst[0]=imm[20], inst[12:20]=imm[19:12], inst[11]=imm[11], inst[1:11]=imm[10:1]
-        imm_bits = (instruction[0]+instruction[12:20]+instruction[11]+instruction[1:11]+'0')        
-        rd= BIN_TO_REG[instruction[20:25]]
-        opcode= instruction[25:32]
- 
-        imm = int(imm_bits,2)
-        if imm_bits[0] =="1":
-            imm -= (1<<21)
-
         if opcode == "1101111":  # jal
-            Registers[rd] = [current_pc + 4]
-            target = (current_pc + imm) & ~1
-            print("jal", f"target={target}",Registers[rd])
-            Registers["x0"] = [0]
-            return target
             
     except (ValueError, IndexError, KeyError) as error:
         print(f"Error Jtype:{instruction}Error:{error}")
         return None
 
 def virtual_halt(instruction):
-    "beq zero, zero, 0  →  opcode=1100011, funct3=000, rs1=rs2=x0, imm=0"
+    """beq zero, zero, 0  →  opcode=1100011, funct3=000, rs1=x0, rs2=x0, imm=0"""
     if len(instruction) < 32:
         return False
-    return (instruction[25:32] == "1100011" and instruction[17:20] == "000" and instruction[12:17] == "00000" and instruction[7:12]  == "00000"   and instruction[0:7]   == "0000000" and instruction[20:25] == "00000")
-
-
+    if not (instruction[25:32] == "1100011" and   # opcode: beq
+            instruction[17:20] == "000"      and   # funct3
+            instruction[12:17] == "00000"    and   # rs1 = zero
+            instruction[7:12]  == "00000"):        # rs2 = zero
+        return False
+    # Also verify the immediate offset is 0 (not just any beq x0,x0,offset)
+    imm_bits = instruction[0] + instruction[24] + instruction[1:7] + instruction[20:24] + '0'
+    imm = int(imm_bits, 2)
+    if imm_bits[0] == "1":
+        imm -= (1 << 13)
+    return imm == 0
 
 def PC_run():
     global pc
     pc = 0
+    # Clear output files before writing (avoid stale append from previous run)
+    if output_path and os.path.exists(output_path):
+        os.remove(output_path)
+    if readable_path and os.path.exists(readable_path):
+        os.remove(readable_path)
 
     while pc // 4 < len(instructions):
         instruction = instructions[pc // 4]
@@ -382,55 +371,65 @@ def PC_run():
         #R type 
         if opcode == "0110011":
             R_TYPE_INSTRUCTION(instruction)
-            write_registers(pc)
             pc += 4
+            write_registers(pc)
         #Itype 
         elif opcode in ["0000011", "0010011"]:
             I_TYPE_INSTRUCTION(instruction, current_pc=pc)
-            write_registers(pc)
             pc += 4
+            write_registers(pc)
         elif opcode == "1100111":                      # jalr
             target = I_TYPE_INSTRUCTION(instruction, current_pc=pc)
-            write_registers(pc)
             pc = target if target is not None else pc + 4
+            write_registers(pc)
         #stype 
         elif opcode == "0100011":
             S_TYPE_INSTRUCTION(instruction)
-            write_registers(pc)
             pc += 4
+            write_registers(pc)
         #btype 
         elif opcode == "1100011":
             offset = B_TYPE_INSTRUCTION(instruction, current_pc=pc, labels=labels)
-            write_registers(pc)
             if offset is not None:
                 pc += offset              # branch taken
             else:
-                pc += 4                 
+                pc += 4
+            write_registers(pc)
         #utype 
         elif opcode in ["0110111", "0010111"]:
             U_TYPE_INSTRUCTION(instruction, current_pc=pc)
-            write_registers(pc)
             pc += 4
+            write_registers(pc)
         #jtype
         elif opcode == "1101111":
             target = J_TYPE_INSTRUCTION(instruction, labels=labels, current_pc=pc)
-            write_registers(pc)
             pc = target if target is not None else pc + 4
+            write_registers(pc)
 
 def main():
     global output_path
     global readable_path
     global labels
+    global instructions
+    global pc
 
-    # if len(sys.argv) < 3:
-    #     print("error please provide this format : python3 Simulator.py <input_machine_code_path> <output_trace_path> [output_readable_path]")
-    #     return
+    # Reset all global state for clean run
+    instructions.clear()
+    pc = 0
+    for key in Registers:
+        Registers[key] = [0]
+    Registers["x2"] = [STACK_TOP]   # sp = x2
+    memory.clear()
 
-    # input_path   = sys.argv[1]
-    # output_path  = sys.argv[2]
-    # readable_path = sys.argv[3] if len(sys.argv) > 3 else None
-    input_path   = 'lol.txt'
-    output_path  = 'lol1.txt'
+    if len(sys.argv) < 3:
+        print("error please provide this format : python3 Simulator.py <input_machine_code_path> <output_trace_path> [output_readable_path]")
+        return
+
+    input_path   = sys.argv[1]
+    output_path  = sys.argv[2]
+    readable_path = sys.argv[3] if len(sys.argv) > 3 else None
+    # input_path   = 'lol.txt'
+    # output_path  = 'lol1.txt'
     # readable_path = input("readable path?")
     try:
         with open(input_path, 'r') as file:
@@ -438,7 +437,7 @@ def main():
                 line = line.strip()
                 if line:
                     instructions.append(line)
-        print("-->",instructions,len(instructions))
+        # print("-->",instructions,len(instructions))
     except FileNotFoundError:
         print("file not found")
         return
