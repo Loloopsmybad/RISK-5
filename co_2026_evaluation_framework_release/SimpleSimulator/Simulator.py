@@ -22,7 +22,7 @@ note the ADRESSES ARE AS FFOLOWS
 | 111_{00-11}               | x28-31   | t3-6     | Temporaries                          | Caller |
 '''
 
-# Maps 5-bit binary string → register name e.g. "00000" → "x0"
+# maps binary string to register 00000 to x0
 BIN_TO_REG = {format(i, '05b'): f"x{i}" for i in range(32)}
 
 Registers = {
@@ -355,11 +355,11 @@ def U_TYPE_INSTRUCTION(instruction,pc):
         elif opc == "0010111":#auipc
             r=to_s32(pc+(imm<<12))
             write_reg(rd,r)
-        return pc + 4, False
+        return pc + 4
 
     except (ValueError, IndexError, KeyError) as error:
         print(f"Error in U-TYPE: {instruction} → {error}")
-        return pc + 4, False
+        return pc + 4
 
 def J_TYPE_INSTRUCTION(instruction, current_pc=0):
     try:
@@ -369,7 +369,7 @@ def J_TYPE_INSTRUCTION(instruction, current_pc=0):
         opcode= instruction[25:32]
  
         imm = int(imm_bits,2)
-        
+
         if imm_bits[0] =="1":
             imm -= (1<<21)
 
