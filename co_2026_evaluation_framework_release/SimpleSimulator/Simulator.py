@@ -162,16 +162,16 @@ def to_s32(v):
     return v-0x100000000 if v>=0x80000000 else v
 def sign_extend(v,bits):
     if(v>=(2**(bits-1))):
-        v-=(2**bits)
+        v=v-(2**bits)
     return v
 def bin32(v):
     return format(to_u32(v),'032b')
 def read_reg(key):
-    if(key=="00000"):
+    if(key=="x0"):
         return 0
     return Registers[key][0]
 def write_reg(key, val):
-    if(key=="00000"):
+    if(key=="x0"):
         return
     Registers[key][0]=to_s32(val)
 def mem_load(addr):
@@ -191,10 +191,10 @@ def R_TYPE_INSTRUCTION(instruction):
         rs2_val = Registers[rs2][0]
 
         if   funct3 == "000" and funct7 == "0000000":  # add
-            Registers[rd] = [rs1_val + rs2_val]
+            Registers[rd] = [to_s32(rs1_val + rs2_val)]
             # print("add", Registers[rd])
         elif funct3 == "000" and funct7 == "0100000":  # sub
-            Registers[rd] = [rs1_val - rs2_val]
+            Registers[rd] = [to_s32(rs1_val - rs2_val)]
             # print("sub", Registers[rd])
         elif funct3 == "100" and funct7 == "0000000":  # xor
             Registers[rd] = [rs1_val ^ rs2_val]
@@ -207,11 +207,11 @@ def R_TYPE_INSTRUCTION(instruction):
             # print("and", Registers[rd])
         elif funct3 == "001" and funct7 == "0000000":  # sll
             shamt = rs2_val & 0x1F
-            Registers[rd] = [rs1_val << shamt]
+            Registers[rd] = [to_s32(to_u32(rs1_val) << shamt)]
             # print("sll", Registers[rd])
         elif funct3 == "101" and funct7 == "0000000":  # srl
             shamt = rs2_val & 0x1F
-            Registers[rd] = [(rs1_val & 0xFFFFFFFF) >> shamt]
+            Registers[rd] = [to_s32(to_u32(rs1_val) >> shamt)]
             # print("srl", Registers[rd])
         elif funct3 == "101" and funct7 == "0100000":  # sra
             shamt = rs2_val & 0x1F
@@ -247,11 +247,11 @@ def I_TYPE_INSTRUCTION(instruction, current_pc=None):
 
         if  opcode == "0000011" and funct3 == "010":# lw
             address = rs1_val + imm
-            Registers[rd] = [memory[address]]
+            Registers[rd] = [mem_load(address)]
             # print("lw",Registers[rd])
 
         elif opcode == "0010011" and funct3 == "000":#addi
-            Registers[rd] = [rs1_val + imm]
+            Registers[rd] = [to_s32(rs1_val + imm)]
             # print("addi",Registers[rd])
 
         elif opcode == "0010011" and funct3 == "011":#sltiu
@@ -347,20 +347,20 @@ def B_TYPE_INSTRUCTION(instruction, current_pc=0, labels={}):
 def U_TYPE_INSTRUCTION(instruction, current_pc=0):
     try:
         opc=instruction[25:32]
-        rd =instruction[20:25]
+        rd =BIN_TO_REG[instruction[20:25]]
         imm=int(instruction[0:20],2)
 
         if(opc=="0110111"):#lui
             r=to_s32(imm<<12)
             write_reg(rd, r)
         elif opc == "0010111":#auipc
-            r=to_s32(pc+(imm<<12))
+            r=to_s32(current_pc+(imm<<12))
             write_reg(rd,r)
-        return pc + 4
+        return current_pc + 4
 
     except (ValueError, IndexError, KeyError) as error:
         print(f"error in U-TYPE: {instruction} → {error}")
-        return pc + 4
+        return current_pc + 4
 
 def J_TYPE_INSTRUCTION(instruction, current_pc=0):
     try:
@@ -458,7 +458,7 @@ def PC_run():
             if target is not None:
                 pc = target  
             else:
-                pc + 4
+                pc += 4
             write_registers(pc)
 
 def main():
