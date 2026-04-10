@@ -60,6 +60,35 @@ Registers = {#32 registers and their list
 # [17:20] = funct3
 # [20:25] = rd
 # [25:32] = opcode
+
+memory = {}
+output_lines=[]
+#helper functions
+def to_u32(v):
+    return v & 0xFFFFFFFF
+def to_s32(v):
+    v=to_u32(v)
+    return v-0x100000000 if v>=0x80000000 else v
+def sign_extend(v,bits):
+    if(v>=(2**(bits-1))):
+        v-=(1**bits)
+    return v
+def bin32(v):
+    return format(to_u32(v),'032b')
+def read_reg(key):
+    if(key=="00000"):
+        return 0
+    return Registers[key][0]
+def write_reg(key, val):
+    if(key=="00000"):
+        return
+    Registers[key][0]=to_s32(val)
+
+def mem_load(addr):
+    return memory.get(addr&-4,0)
+def mem_store(addr,val):
+    memory[addr&-4]=to_s32(val)
+  
 instructions=[]
 def write_registers():
     a=[]
@@ -213,16 +242,24 @@ def I_TYPE_INSTRUCTION(instruction, memory=None, pc=None):
     except (ValueError, IndexError, KeyError) as error:
         print(f"error processing Itype instruction:{instruction}.Error:{error}")
 
-def S_TYPE_INSTRUCTION(instruction):# added try except
+def S_TYPE_INSTRUCTION(instruction,pc):# added try except
     try:
-        if instruction[17:20]=="010":#"sw"
-             print(instruction)
-            
-        
-        # write_to_file(instruction,output_path,readable_path)
+        rs2 =instruction[7:12]
+        rs1 =instruction[12:17]
+        f3  =instruction[17:20]
+        imm =sign_extend(int(instruction[0:7]+instruction[20:25],2),12)#join both parts of imm
+        if(f3=="010"):
+            addr =to_u32(read_reg(rs1)+imm)
+            val=read_reg(rs2)
+            mem_store(addr,val)
+        else:
+            print(f"Error: Unknown S-type f3={f3}")
+        return pc + 4, False
+        #write_to_file(instruction,output_path,readable_path)
     except (ValueError,IndexError,KeyError) as error:
         st= f"Error processing instruction: {instruction}. Error: {error}"
         binary_instructions.append(st)
+        return pc + 4, False
 
 def B_TYPE_INSTRUCTION(instruction,current_pc,labels):# added try except
     try:
@@ -248,15 +285,23 @@ def B_TYPE_INSTRUCTION(instruction,current_pc,labels):# added try except
 
 def U_TYPE_INSTRUCTION(instruction):# added try except
     try:
-        if   instruction[25:32]=="0110111":#"lui"  
-             print(instruction)
-        elif instruction[25:32]=="0010111":#"auipc"
-             print(instruction)
-
+        opc=instruction[25:32]
+        rd =instruction[20:25]
+        imm=int(instruction[0:20],2)
+        if(opc=="0110111"):#lui
+            r=to_s32(imm<<12)
+            write_reg(rd, r)
+            print("lui rd=",rd,"=",hex(to_u32(r)))
+        elif opc == "0010111":#auipc
+            r=to_s32(pc+(imm<<12))
+            write_reg(rd,r)
+            print("auipc rd=",rd,"=",hex(to_u32(r)))
+        return pc + 4, False
         # write_to_file(instruction,output_path,readable_path)
     except (ValueError,IndexError,KeyError) as error:
         st= f"Error processing instruction: {instruction}. Error: {error}"
         binary_instructions.append(st)
+        return pc + 4, False
 
 def J_TYPE_INSTRUCTION(instruction,labels,current_pc): # added try except
     try:
